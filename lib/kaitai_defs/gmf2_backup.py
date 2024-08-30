@@ -7,7 +7,7 @@ from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
-class Gmf2(KaitaiStruct):
+class Gmf2_BACKUP(KaitaiStruct):
     """Grasshopper Manufacture
     No More Heroes world chunk
     GMF - Grasshopper Model File?
@@ -55,9 +55,10 @@ class Gmf2(KaitaiStruct):
         self._unnamed16 = self._io.read_bytes(8)
         if not self._unnamed16 == b"\x00\x00\x00\x00\x00\x00\x00\x00":
             raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed16, self._io, u"/seq/16")
-        if self.nmh2_identifier == 4294967295:
-            self._unnamed17 = self._io.read_bytes(16)
-
+        self.nmh2_unknown = self._io.read_u4be()
+        self._unnamed18 = self._io.read_bytes(12)
+        if not self._unnamed18 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
+            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed18, self._io, u"/seq/18")
         self.textures = []
         for i in range(self.num_textures):
             self.textures.append(Gmf2.Texture(self._io, self, self._root))
@@ -89,6 +90,8 @@ class Gmf2(KaitaiStruct):
             self.off_next = self._io.read_u4le()
             self.off_surf_list = self._io.read_u4le()
             self._unnamed8 = self._io.read_bytes(4)
+            if not self._unnamed8 == b"\x00\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed8, self._io, u"/types/world_object/seq/8")
             self.off_unk = self._io.read_u4le()
             self.v_divisor = self._io.read_s4le()
             self.origin = Gmf2.FlVector(self._io, self, self._root)
@@ -103,9 +106,24 @@ class Gmf2(KaitaiStruct):
             self.unkf_16 = self._io.read_f4le()
             self.cullbox_size = Gmf2.FlVector(self._io, self, self._root)
             self.unkf_1a = self._io.read_f4le()
-            if self._root.nmh2_identifier == 4294967295:
-                self.nmh2_unk_2 = self._io.read_bytes(64)
-
+            self._unnamed23 = self._io.read_bytes(8)
+            self._unnamed24 = self._io.read_bytes(8)
+            if not self._unnamed24 == b"\x7f\x7f\xff\xff\x7f\x7f\xff\xff":
+                raise kaitaistruct.ValidationNotEqualError(b"\x7f\x7f\xff\xff\x7f\x7f\xff\xff", self._unnamed24, self._io, u"/types/world_object/seq/24")
+            self._unnamed25 = self._io.read_bytes(8)
+            if not self._unnamed25 == b"\x7f\x7f\xff\xff\x7f\x7f\xff\xff":
+                raise kaitaistruct.ValidationNotEqualError(b"\x7f\x7f\xff\xff\x7f\x7f\xff\xff", self._unnamed25, self._io, u"/types/world_object/seq/25")
+            self._unnamed26 = self._io.read_bytes(8)
+            if not self._unnamed26 == b"\x7f\x7f\xff\xff\x7f\x7f\xff\xff":
+                raise kaitaistruct.ValidationNotEqualError(b"\x7f\x7f\xff\xff\x7f\x7f\xff\xff", self._unnamed26, self._io, u"/types/world_object/seq/26")
+            self._unnamed27 = self._io.read_bytes(8)
+            if not self._unnamed27 == b"\x7f\x7f\xff\xff\x7f\x7f\xff\xff":
+                raise kaitaistruct.ValidationNotEqualError(b"\x7f\x7f\xff\xff\x7f\x7f\xff\xff", self._unnamed27, self._io, u"/types/world_object/seq/27")
+            self.nmh2_unk_1 = self._io.read_u4le()
+            self._unnamed29 = self._io.read_bytes(8)
+            if not self._unnamed29 == b"\x00\x00\x00\x00\x00\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed29, self._io, u"/types/world_object/seq/29")
+            self._unnamed30 = self._io.read_bytes(12)
 
         class Surface(KaitaiStruct):
             """Headers are in a linked list.
@@ -398,16 +416,5 @@ class Gmf2(KaitaiStruct):
             io.seek(_pos)
             return getattr(self, '_m_data', None)
 
-
-    @property
-    def nmh2_identifier(self):
-        if hasattr(self, '_m_nmh2_identifier'):
-            return self._m_nmh2_identifier
-
-        _pos = self._io.pos()
-        self._io.seek(112)
-        self._m_nmh2_identifier = self._io.read_u4be()
-        self._io.seek(_pos)
-        return getattr(self, '_m_nmh2_identifier', None)
 
 

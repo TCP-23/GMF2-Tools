@@ -9,6 +9,10 @@ doc: |
   GMF - Grasshopper Model File?
   Japanese text encoding.
 
+instances:
+  nmh2_identifier:
+    pos: 0x70
+    type: u4be
 seq:
   - id: magic
     contents: "GMF2"
@@ -44,6 +48,10 @@ seq:
   - contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   - contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   - contents: [0, 0, 0, 0, 0, 0, 0, 0]
+  
+  # NMH2 specific data
+  - contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    if: nmh2_identifier == 4294967295
 
   # --- Content Headers
 
@@ -238,6 +246,12 @@ types:
         type: fl_vector
       - id: unkf_1a
         type: f4le
+        
+      # NMH2 debugging
+      - id: nmh2_unk_2
+        size: 64
+        if: _root.nmh2_identifier == 4294967295
+        
 
     instances:
       data_c:
