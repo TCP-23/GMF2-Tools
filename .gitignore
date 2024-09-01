@@ -14,4 +14,6 @@ site/
 extratools/
 
 # developer stuff
+.idea/
 dev_only/
+doc_development/
