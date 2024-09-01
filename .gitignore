@@ -12,3 +12,6 @@ site/
 # other tools
 .obsidian/
 extratools/
+
+# developer stuff
+dev_only/

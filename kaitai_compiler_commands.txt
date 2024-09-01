@@ -1,2 +1,0 @@
-CD Documents\GitHub\MiscGitHubProjects\nmh_reverse\lib\kaitai_defs
-kaitai-struct-compiler "gmf2.ksy" -t python
