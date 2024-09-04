@@ -1,0 +1,19 @@
+schema_version = "1.0.0"
+
+id = "gmf2_tools"
+version = "1.0.0"
+name = "GMF2 Tools"
+tagline = "Blender extension that allows Blender to import GMF2 models"
+maintainer = "TCP_23"
+type = "add-on"
+blender_version_min = "4.2.0"
+
+website = "https://github.com/TCP-23/nmh_reverse"
+
+license = [
+  "SPDX:GPL-2.0-or-later",
+]
+
+wheels = [
+	"./wheels/kaitaistruct-0.10-py2.py3-none-any.whl",
+]
