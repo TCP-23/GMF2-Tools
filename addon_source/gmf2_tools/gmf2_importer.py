@@ -29,12 +29,17 @@ def import_models(self, context, filepath):
         origin_y = world_object.origin.y * 0.1
         origin_z = world_object.origin.z * 0.1
 
+        rot_x = world_object.unk_b
+        rot_y = world_object.rot_y
+        rot_z = world_object.rot_z
+        rot_w = world_object.unkf_11
+
         scale_x = world_object.scale.x
         scale_y = world_object.scale.y
         scale_z = world_object.scale.z
 
         GM2MeshCreator.create_mesh(self, context, f'{key}_{world_object.name}_{rng_key_dic[key]}',
-                                   tuple((origin_x, origin_y, origin_z)))
+                                   tuple((origin_x, origin_y, origin_z)), tuple((rot_x, rot_y, rot_z, rot_w)))
 
         if world_object.surfaces == None:
             continue

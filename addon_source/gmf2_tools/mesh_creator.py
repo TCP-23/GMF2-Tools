@@ -13,19 +13,27 @@ class GM2MeshCreator(Operator, AddObjectHelper):
 
     SurfData = namedtuple("SurfData", "v i uvs")
 
-    def create_mesh(self, context, id, origin=None):
+    def create_mesh(self, context, id, origin=None, rotation=None):
         mesh = bpy.data.meshes.new(id)
 
         from bpy_extras import object_utils
         obj = object_utils.object_data_add(context, mesh, operator=None)
 
+        context.view_layer.objects.active = obj
+
         if origin != None:
             context.scene.cursor.location = (0, 0, 0)
-            context.view_layer.objects.active = obj
             context.scene.cursor.location = origin
             bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
             context.scene.cursor.location = (0, 0, 0)
-            context.view_layer.objects.active = None
+
+        if rotation != None:
+            pass
+            #obj.rotation_mode = 'QUATERNION'
+            #obj.rotation_quaternion = mathutils.Quaternion(mathutils.Vector((rotation[3], rotation[0], rotation[1],
+                                                                             #rotation[2])))
+
+        context.view_layer.objects.active = None
 
         return {'FINISHED'}
 
@@ -46,7 +54,8 @@ class GM2MeshCreator(Operator, AddObjectHelper):
         bm.verts.ensure_lookup_table()
 
         for idx_group in sdata.i:
-            if idx_group.count(idx_group[0]) == 1 and idx_group.count(idx_group[1]) == 1 and idx_group.count(idx_group[2]) == 1:
+            if idx_group.count(idx_group[0]) == 1 and idx_group.count(idx_group[1]) == 1 and idx_group.count(
+                    idx_group[2]) == 1:
                 if not bm.faces.get([bm.verts[j - 1] for j in idx_group]):
                     bm.faces.new([bm.verts[j - 1] for j in idx_group])
 

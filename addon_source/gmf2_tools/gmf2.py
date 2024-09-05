@@ -93,7 +93,7 @@ class Gmf2(KaitaiStruct):
             self.v_divisor = self._io.read_s4le()
             self.origin = Gmf2.FlVector(self._io, self, self._root)
             self.unkf_a = self._io.read_f4le()
-            self.unk_b = self._io.read_u4le()
+            self.unk_b = self._io.read_f4le()
             self.rot_y = self._io.read_f4le()
             self.rot_z = self._io.read_f4le()
             self.unkf_11 = self._io.read_f4le()
