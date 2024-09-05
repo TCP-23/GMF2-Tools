@@ -16,34 +16,28 @@ def import_models(self, context, filepath):
     gm2: Gmf2 = Gmf2.from_file(filepath)
 
     objects = {}
+    rng_key_dic = {}
+
     for i, world_object in enumerate(gm2.world_objects):
         objects[world_object.off] = world_object
+        rng_key_dic[world_object.off] = random.randint(1, 65535)
 
     for i, key in enumerate(objects):
         world_object = objects[key]
 
-        origin_x = 0
-        origin_y = 0
-        origin_z = 0
-        scale_x = 1
-        scale_y = 1
-        scale_z = 1
-        object = world_object
-        while object != None:
-            origin_x += object.origin.x
-            origin_y += object.origin.y
-            origin_z += object.origin.z
-            scale_x *= object.scale.x
-            scale_y *= object.scale.y
-            scale_z *= object.scale.z
-            object = objects.get(object.off_parent)
+        origin_x = world_object.origin.x * 0.1
+        origin_y = world_object.origin.y * 0.1
+        origin_z = world_object.origin.z * 0.1
+
+        scale_x = world_object.scale.x
+        scale_y = world_object.scale.y
+        scale_z = world_object.scale.z
+
+        GM2MeshCreator.create_mesh(self, context, f'{key}_{world_object.name}_{rng_key_dic[key]}',
+                                   tuple((origin_x, origin_y, origin_z)))
 
         if world_object.surfaces == None:
-            print("No geometry.")
             continue
-
-        rng_key = random.randint(1, 65535)
-        GM2MeshCreator.create_mesh(self, context, f'{key}_{world_object.name}_{rng_key}')
 
         last_index = 0
         for ii, surf in enumerate(world_object.surfaces):
@@ -59,13 +53,19 @@ def import_models(self, context, filepath):
 
                 for v in temp_vertices:
                     if gm2.nmh2_identifier == 4294967295:
-                        x = (v.x / scale_x + origin_x) * 0.1,
-                        y = (v.y / scale_y + origin_y) * 0.1,
-                        z = (v.z / scale_z + origin_z) * 0.1,
+                        #x = (v.x / scale_x + origin_x) * 0.1,
+                        #y = (v.y / scale_y + origin_y) * 0.1,
+                        #z = (v.z / scale_z + origin_z) * 0.1,
+                        x = (v.x / scale_x) * 0.1,
+                        y = (v.y / scale_y) * 0.1,
+                        z = (v.z / scale_z) * 0.1,
                     else:
-                        x = (v.x / pow(2, world_object.v_divisor) * scale_x + origin_x) * 0.1,
-                        y = (v.y / pow(2, world_object.v_divisor) * scale_y + origin_y) * 0.1,
-                        z = (v.z / pow(2, world_object.v_divisor) * scale_z + origin_z) * 0.1,
+                        #x = (v.x / pow(2, world_object.v_divisor) * scale_x + origin_x) * 0.1,
+                        #y = (v.y / pow(2, world_object.v_divisor) * scale_y + origin_y) * 0.1,
+                        #z = (v.z / pow(2, world_object.v_divisor) * scale_z + origin_z) * 0.1,
+                        x = (v.x / pow(2, world_object.v_divisor) * scale_x) * 0.1,
+                        y = (v.y / pow(2, world_object.v_divisor) * scale_y) * 0.1,
+                        z = (v.z / pow(2, world_object.v_divisor) * scale_z) * 0.1,
 
                     verts.append(tuple((x, y, z)))
 
@@ -88,10 +88,16 @@ def import_models(self, context, filepath):
 
                 last_index += len(idxs)
 
-            GM2MeshCreator.create_mesh_surface(self, context, f'{key}_{world_object.name}_{rng_key}',
-                                             GM2MeshCreator.SurfData(verts, indices, uvs))
+            GM2MeshCreator.create_mesh_surface(self, context, f'{key}_{world_object.name}_{rng_key_dic[key]}',
+                                               GM2MeshCreator.SurfData(verts, indices, uvs))
 
-            #processed_models[key] = tuple((world_object.name, verts, indices, uvs))
+    for i, key in enumerate(objects):
+        world_object = objects[key]
+
+        if world_object.off_parent != 0:
+            parent_id = f'{world_object.off_parent}_{objects.get(world_object.off_parent).name}_{rng_key_dic[world_object.off_parent]}'
+            GM2MeshCreator.set_mesh_parent(self, context, f'{key}_{world_object.name}_{rng_key_dic[key]}',
+                                           parent_id)
 
 
 def get_strips(surf, obj) -> list:
@@ -121,10 +127,10 @@ def get_strips(surf, obj) -> list:
                         v = struct.unpack('>h', ibuf[9:11])[0]
                         indices.append(Gm2Idx(idx, u, v))
                     else:
-                        if surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 153\
+                        if surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 153 \
                                 or (surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 0
                                     and num_idx == surf.data.num_v_smthn_total):
-                            ibuf = surfbuf[head+2:head+11]
+                            ibuf = surfbuf[head + 2:head + 11]
                             head += 11
                         else:
                             ibuf = surfbuf[head:head + 9]

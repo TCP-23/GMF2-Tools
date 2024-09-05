@@ -13,13 +13,25 @@ class GM2MeshCreator(Operator, AddObjectHelper):
 
     SurfData = namedtuple("SurfData", "v i uvs")
 
-    def create_mesh(self, context, id):
+    def create_mesh(self, context, id, origin=None):
         mesh = bpy.data.meshes.new(id)
 
         from bpy_extras import object_utils
-        object_utils.object_data_add(context, mesh, operator=None)
+        obj = object_utils.object_data_add(context, mesh, operator=None)
+
+        if origin != None:
+            context.scene.cursor.location = (0, 0, 0)
+            context.view_layer.objects.active = obj
+            context.scene.cursor.location = origin
+            bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+            context.scene.cursor.location = (0, 0, 0)
+            context.view_layer.objects.active = None
 
         return {'FINISHED'}
+
+    def set_mesh_parent(self, context, childId, parentId):
+        if parentId != None and childId != None:
+            bpy.data.objects[childId].parent = bpy.data.objects[parentId]
 
     def create_mesh_surface(self, context, id, sdata: SurfData):
         mesh = bpy.data.objects[id].data
@@ -33,32 +45,16 @@ class GM2MeshCreator(Operator, AddObjectHelper):
 
         bm.verts.ensure_lookup_table()
 
-        print(sdata.i)
-
         for idx_group in sdata.i:
             if idx_group.count(idx_group[0]) == 1 and idx_group.count(idx_group[1]) == 1 and idx_group.count(idx_group[2]) == 1:
                 if not bm.faces.get([bm.verts[j - 1] for j in idx_group]):
                     bm.faces.new([bm.verts[j - 1] for j in idx_group])
-
-        #for idx_group in obj.i:
-            #if idx_group[0] <= len(obj.v) and idx_group[1] <= len(obj.v) and idx_group[2] <= len(obj.v):
-                #if (idx_group[0] != idx_group[1]) and (idx_group[0] != idx_group[2]) and (idx_group[1] != idx_group[2]):
-                    #if not bm.faces.get([bm.verts[j - 1] for j in idx_group]):
-                        #bm.faces.new([bm.verts[j - 1] for j in idx_group])
 
         bm.to_mesh(mesh)
         bm.free()
         mesh.update()
 
         return {'FINISHED'}
-
-    def trim_indices(self, un_idxs) -> list:
-        trimmed_idxs = []
-        for ind in un_idxs:
-            ind_perms = []
-            ind_perms.append(tuple((ind[0], ind[1], ind[2])))
-
-        return trimmed_idxs
 
     def execute(self, context):
         #create_mesh(self, context, None)

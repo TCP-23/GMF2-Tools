@@ -8,7 +8,7 @@ maintainer = "TCP_23"
 type = "add-on"
 blender_version_min = "4.2.0"
 
-website = "https://github.com/TCP-23/nmh_reverse"
+website = "https://github.com/TCP-23/GMF2-Tools"
 
 license = [
   "SPDX:GPL-2.0-or-later",
