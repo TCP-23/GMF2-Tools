@@ -27,6 +27,7 @@ Models with an armature don't rip correctly at the moment
 - ~~Object Origins~~
 - Object Rotations
 - Armature
+- Materials
 - Normals
 - UVs
 - Textures
