@@ -47,6 +47,8 @@ class GM2MeshCreator(Operator, AddObjectHelper):
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
+        #print(sdata.i)
+
         for vert in sdata.v:
             vert_pos = [vert[0][0], vert[1][0], vert[2][0]]
             bm.verts.new(vert_pos)

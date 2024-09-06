@@ -132,13 +132,11 @@ def get_strips(surf, obj) -> list:
                         v = struct.unpack('>h', ibuf[9:11])[0]
                         indices.append(Gm2Idx(idx, u, v))
                     else:
-                        if surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 153 \
-                                or (surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 0
-                                    and num_idx == surf.data.num_v_smthn_total):
-                            ibuf = surfbuf[head + 2:head + 11]
+                        if get_tristrip_format(surf, num_idx) == 1:
+                            ibuf = surfbuf[head+2:head+11]
                             head += 11
                         else:
-                            ibuf = surfbuf[head:head + 9]
+                            ibuf = surfbuf[head:head+9]
                             head += 9
 
                         idx = struct.unpack('>H', ibuf[0:2])[0]
@@ -170,6 +168,18 @@ def get_strips(surf, obj) -> list:
         i_remaining -= num_idx
 
     return strips
+
+
+def get_tristrip_format(surface, num_idx):
+    surfbuf = surface.data.data
+
+    if surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 153 \
+            or (surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 0
+                and surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 4] != 0
+                and num_idx == surface.data.num_v_smthn_total):
+        return 1
+    else:
+        return 0
 
 
 def get_nodetree(node_id: str, nodes: list):

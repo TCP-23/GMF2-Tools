@@ -7,7 +7,7 @@ Uses code from https://github.com/sevonj/nmh_reverse
 
 A [Blender](https://www.blender.org) extension that allows Blender to import GMF2 files.
 
-Models with an armature don't rip correctly at the moment
+Models with an armature don't rip correctly at the moment.
 
 ## Requirements:
 - Blender version 4.2 or higher
