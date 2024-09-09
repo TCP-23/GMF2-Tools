@@ -28,10 +28,9 @@ class GM2MeshCreator(Operator, AddObjectHelper):
             context.scene.cursor.location = (0, 0, 0)
 
         if rotation != None:
-            pass
-            #obj.rotation_mode = 'QUATERNION'
-            #obj.rotation_quaternion = mathutils.Quaternion(mathutils.Vector((rotation[3], rotation[0], rotation[1],
-                                                                             #rotation[2])))
+            obj.rotation_mode = 'QUATERNION'
+            obj.rotation_quaternion = mathutils.Quaternion(mathutils.Vector((rotation[3], rotation[0], rotation[1],
+                                                                             rotation[2])))
 
         context.view_layer.objects.active = None
 

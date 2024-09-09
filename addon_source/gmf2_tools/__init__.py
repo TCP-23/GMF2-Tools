@@ -2,21 +2,20 @@
 
 import bpy
 
+from .tools_setup import ToolsSetup
 from .gmf2_importer import GM2ModelImporter
 from .mesh_creator import GM2MeshCreator
 
 
 def menu_func_import(self, context):
-    self.layout.operator(GM2ModelImporter.bl_idname, text="No More Heroes Model (.gm2)")
+    self.layout.operator(ToolsSetup.bl_idname, text="No More Heroes Model (.gm2)")
 
 
 def register():
-    bpy.utils.register_class(GM2ModelImporter)
-    bpy.utils.register_class(GM2MeshCreator)
+    bpy.utils.register_class(ToolsSetup)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 
 def unregister():
-    bpy.utils.unregister_class(GM2ModelImporter)
-    bpy.utils.unregister_class(GM2MeshCreator)
+    bpy.utils.unregister_class(ToolsSetup)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
