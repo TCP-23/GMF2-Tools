@@ -18,7 +18,7 @@ class GM2ModelImporter(Operator):
     bl_idname = "gm2_importer.model_data"
     bl_label = "Import GMF2 model"
 
-    def import_models(self, context, filepath, fixCoord):
+    def import_models(self, context, filepath, idxMode, fixCoord):
         gm2: Gmf2 = Gmf2.from_file(filepath)
 
         objects = {}
@@ -52,7 +52,7 @@ class GM2ModelImporter(Operator):
 
             last_index = 0
             for ii, surf in enumerate(world_object.surfaces):
-                strips = GM2ModelImporter.get_strips(self, surf, world_object)
+                strips = GM2ModelImporter.get_strips(self, surf, world_object, idxMode)
                 verts = []
                 indices = []
                 uvs = []
@@ -116,7 +116,7 @@ class GM2ModelImporter(Operator):
                     obj.rotation_euler = mathutils.Euler((obj.rotation_euler.x + radians(90), obj.rotation_euler.y,
                                                           obj.rotation_euler.z), 'XYZ')
 
-    def get_strips(self, surf, obj) -> list:
+    def get_strips(self, surf, obj, idxMode) -> list:
         surfbuf = surf.data.data
         strips = []
 
@@ -132,7 +132,7 @@ class GM2ModelImporter(Operator):
             match command:
                 case 0x99:
                     for _ in range(num_idx):
-                        if obj.data_c != None:
+                        if (idxMode == "OPT_D") or (idxMode == "OPT_A" and obj.data_c != None):
                             ibuf = surfbuf[head:head + 11]
                             head += 11
 
@@ -141,9 +141,9 @@ class GM2ModelImporter(Operator):
                             _color = ibuf[5:7]
                             u = struct.unpack('>h', ibuf[7:9])[0]
                             v = struct.unpack('>h', ibuf[9:11])[0]
-                            indices.append(Gm2Idx(idx, u, v))
                         else:
-                            if GM2ModelImporter.get_tristrip_format(self, surf, num_idx) == 1:
+                            if (idxMode == "OPT_C") or (idxMode == "OPT_A" and
+                                                        GM2ModelImporter.get_tristrip_format(self, surf, num_idx) == 1):
                                 ibuf = surfbuf[head + 2:head + 11]
                                 head += 11
                             else:
@@ -154,11 +154,13 @@ class GM2ModelImporter(Operator):
                             u = struct.unpack('>h', ibuf[5:7])[0]
                             v = struct.unpack('>h', ibuf[7:9])[0]
 
+                        if len(surf.v_buf) >= idx - 1:
                             indices.append(Gm2Idx(idx, u, v))
-
+                        else:
+                            return []
                 case _:
                     print(f"ERR: unk_0 == {hex(command)}")
-                    # return []
+                    return []
 
             if len(indices) <= 0:
                 return []
@@ -190,6 +192,8 @@ class GM2ModelImporter(Operator):
             return 1
         else:
             return 0
+
+
 
     def get_nodetree(self, node_id: str, nodes: list):
         """Recursively get node tree"""
