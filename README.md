@@ -1,13 +1,11 @@
 # GMF2 Tools
 
 > [!NOTE]  
-> See [here](https://sevonj.github.io/nmh_reverse/formats/) for documentation on how data is stored in the game files.
+> See [here](https://sevonj.github.io/ghm_docs/formats/) for documentation on how data is stored in the game files.
 
 Uses code from https://github.com/sevonj/nmh_reverse
 
 A [Blender](https://www.blender.org) extension that allows Blender to import GMF2 files.
-
-Models with an armature don't rip correctly at the moment.
 
 ## Requirements:
 - Blender version 4.2 or higher
@@ -25,7 +23,7 @@ Models with an armature don't rip correctly at the moment.
 - ~~Indices~~
 - ~~Object Hierarchy~~
 - ~~Object Origins~~
-- Object Rotations
+- ~~Object Rotations~~
 - Armature
 - Materials
 - Normals

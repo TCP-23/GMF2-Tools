@@ -1,10 +1,7 @@
 import bpy
 import struct
-import random
 from collections import namedtuple
 from bpy.types import Operator
-import mathutils
-from math import radians
 
 from .gmf2 import Gmf2
 from .mesh_creator import GM2MeshCreator
@@ -12,109 +9,108 @@ from .mesh_creator import GM2MeshCreator
 Vec3 = namedtuple("Vec3", "x y z")
 Gm2Idx = namedtuple("Gm2Idx", "i u v")
 
-
 class GM2ModelImporter(Operator):
     """Import mesh data from a GMF2 file"""
     bl_idname = "gm2_importer.model_data"
     bl_label = "Import GMF2 model"
 
-    def import_models(self, context, filepath, idxMode, fixCoord):
+    idx_mode = 'OPT_A'
+    fix_coord = False
+    smooth_shading = False
+    testing_features = False
+
+    def set_import_variables(self, context, indexOverride, fixCoordinateSpace, useSmoothShading, devFeatures):
+        self.idx_mode = indexOverride
+        self.fix_coord = fixCoordinateSpace
+        self.smooth_shading = useSmoothShading
+        self.testing_features = devFeatures
+
+    def load_model_data(self, context, filepath):
         gm2: Gmf2 = Gmf2.from_file(filepath)
 
+        isNmh2 = False
+        if gm2.nmh2_identifier == 4294967295:
+            isNmh2 = True
+
         objects = {}
-        rng_key_dic = {}
 
         for i, world_object in enumerate(gm2.world_objects):
             objects[world_object.off] = world_object
-            rng_key_dic[world_object.off] = random.randint(1, 65535)
 
-        for i, key in enumerate(objects):
-            world_object = objects[key]
+        #order of operations:
+        #create object
+        #set name
 
-            origin_x = world_object.origin.x * 0.1
-            origin_y = world_object.origin.y * 0.1
-            origin_z = world_object.origin.z * 0.1
+        #if we have a parent, set it
+        #set our position
+        #set our rotation
+        #load geometry
+        #load children of our object
 
-            rot_x = 0
-            rot_y = world_object.rot_y
-            rot_z = world_object.rot_z
-            rot_w = world_object.unkf_11
+        GM2ModelImporter.import_objects(self, context, objects, gm2.world_objects[0].off,
+                                        None, isNmh2)
 
-            scale_x = world_object.scale.x
-            scale_y = world_object.scale.y
-            scale_z = world_object.scale.z
+    def import_objects(self, context, model_data, _off, parent, isNmh2):
+        next_offset = _off
 
-            GM2MeshCreator.create_mesh(self, context, f'{key}_{world_object.name}_{rng_key_dic[key]}',
-                                       tuple((origin_x, origin_y, origin_z)), tuple((rot_x, rot_y, rot_z, rot_w)))
+        while next_offset != 0:
+            obj_data = model_data[next_offset]
+            new_obj = GM2MeshCreator.create_object(self, context, obj_data, parent, self.fix_coord)
 
-            if world_object.surfaces == None:
-                continue
+            if obj_data.surfaces != None:
+                last_index = 0
+                for ii, surf in enumerate(obj_data.surfaces):
+                    strips = GM2ModelImporter.get_strips(self, surf, obj_data, self.idx_mode)
+                    verts = []
+                    indices = []
+                    uvs = []
 
-            last_index = 0
-            for ii, surf in enumerate(world_object.surfaces):
-                strips = GM2ModelImporter.get_strips(self, surf, world_object, idxMode)
-                verts = []
-                indices = []
-                uvs = []
+                    if ii == 0:
+                        temp_vertices = []
+                        for v in surf.v_buf:
+                            temp_vertices.append(Vec3(v.x, v.y, v.z))
 
-                if ii == 0:
-                    temp_vertices = []
-                    for v in surf.v_buf:
-                        temp_vertices.append(Vec3(v.x, v.y, v.z))
+                        for v in temp_vertices:
+                            if isNmh2:
+                                x = (v.x / 1) * 0.1
+                                y = (v.y / 1) * 0.1
+                                z = (v.z / 1) * 0.1
+                            else:
+                                x = (v.x / pow(2, obj_data.v_divisor)) * 0.1
+                                y = (v.y / pow(2, obj_data.v_divisor)) * 0.1
+                                z = (v.z / pow(2, obj_data.v_divisor)) * 0.1
 
-                    for v in temp_vertices:
-                        if gm2.nmh2_identifier == 4294967295:
-                            # x = (v.x / scale_x + origin_x) * 0.1,
-                            # y = (v.y / scale_y + origin_y) * 0.1,
-                            # z = (v.z / scale_z + origin_z) * 0.1,
-                            x = (v.x / scale_x) * 0.1,
-                            y = (v.y / scale_y) * 0.1,
-                            z = (v.z / scale_z) * 0.1,
-                        else:
-                            # x = (v.x / pow(2, world_object.v_divisor) * scale_x + origin_x) * 0.1,
-                            # y = (v.y / pow(2, world_object.v_divisor) * scale_y + origin_y) * 0.1,
-                            # z = (v.z / pow(2, world_object.v_divisor) * scale_z + origin_z) * 0.1,
-                            x = (v.x / pow(2, world_object.v_divisor) * scale_x) * 0.1,
-                            y = (v.y / pow(2, world_object.v_divisor) * scale_y) * 0.1,
-                            z = (v.z / pow(2, world_object.v_divisor) * scale_z) * 0.1,
+                            verts.append(tuple((x, y, z)))
 
-                        verts.append(tuple((x, y, z)))
+                    if strips == []:
+                        continue
 
-                if strips == []:
-                    continue
+                    for idxs in strips:
+                        for iii in range(len(idxs)):
+                            u = idxs[iii].u / pow(2, 10)
+                            v = idxs[iii].v / pow(2, 10)
 
-                for idxs in strips:
-                    for iii in range(len(idxs)):
-                        u = idxs[iii].u / pow(2, 10)
-                        v = idxs[iii].v / pow(2, 10)
+                            uvs.append(tuple((u, v)))
 
-                        uvs.append(tuple((u, v)))
+                        for iii in range(len(idxs) - 2):
+                            va = idxs[iii].i + 1
+                            vb = idxs[iii + 1].i + 1
+                            vc = idxs[iii + 2].i + 1
 
-                    for iii in range(len(idxs) - 2):
-                        va = idxs[iii].i + 1
-                        vb = idxs[iii + 1].i + 1
-                        vc = idxs[iii + 2].i + 1
+                            indices.append(tuple((va, vb, vc)))
 
-                        indices.append(tuple((va, vb, vc)))
+                        last_index += len(idxs)
 
-                    last_index += len(idxs)
+                    GM2MeshCreator.create_mesh_surface(self, context, new_obj,
+                                                       GM2MeshCreator.SurfData(verts, indices, uvs))
 
-                GM2MeshCreator.create_mesh_surface(self, context, f'{key}_{world_object.name}_{rng_key_dic[key]}',
-                                                   GM2MeshCreator.SurfData(verts, indices, uvs))
+                if self.smooth_shading:
+                    new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
 
-        for i, key in enumerate(objects):
-            world_object = objects[key]
-
-            if world_object.off_parent != 0:
-                parent_id = f'{world_object.off_parent}_{objects.get(world_object.off_parent).name}_{rng_key_dic[world_object.off_parent]}'
-                GM2MeshCreator.set_mesh_parent(self, context, f'{key}_{world_object.name}_{rng_key_dic[key]}',
-                                               parent_id)
-            else:
-                if fixCoord:
-                    obj = bpy.data.objects[f'{key}_{world_object.name}_{rng_key_dic[key]}']
-                    obj.rotation_mode = 'XYZ'
-                    obj.rotation_euler = mathutils.Euler((obj.rotation_euler.x + radians(90), obj.rotation_euler.y,
-                                                          obj.rotation_euler.z), 'XYZ')
+            if (obj_data.off_firstchild != 0):
+                GM2ModelImporter.import_objects(self, context, model_data, obj_data.off_firstchild,
+                                                new_obj, isNmh2)
+            next_offset = obj_data.off_next
 
     def get_strips(self, surf, obj, idxMode) -> list:
         surfbuf = surf.data.data
@@ -193,8 +189,6 @@ class GM2ModelImporter(Operator):
         else:
             return 0
 
-
-
     def get_nodetree(self, node_id: str, nodes: list):
         """Recursively get node tree"""
         children = {}
@@ -240,6 +234,4 @@ class GM2ModelImporter(Operator):
             f.write(tree_str)
 
     def execute(self, context):
-        #import_models(self, context, self.filepath)
-
         return {'FINISHED'}

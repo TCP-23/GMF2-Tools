@@ -3,8 +3,7 @@ import bmesh
 from collections import namedtuple
 from bpy.types import Operator
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
-import mathutils
-
+import math
 
 class GM2MeshCreator(Operator, AddObjectHelper):
     """Create mesh data from a GMF2 file"""
@@ -13,43 +12,38 @@ class GM2MeshCreator(Operator, AddObjectHelper):
 
     SurfData = namedtuple("SurfData", "v i uvs")
 
-    def create_mesh(self, context, id, origin=None, rotation=None):
-        mesh = bpy.data.meshes.new(id)
-
+    def create_object(self, context, obj_data, parent, fixCoord):
+        obj_mesh = bpy.data.meshes.new(obj_data.name)
         from bpy_extras import object_utils
-        obj = object_utils.object_data_add(context, mesh, operator=None)
+        new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
 
-        context.view_layer.objects.active = obj
+        context.view_layer.objects.active = new_obj
 
-        if origin != None:
-            context.scene.cursor.location = (0, 0, 0)
-            context.scene.cursor.location = origin
-            bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
-            context.scene.cursor.location = (0, 0, 0)
+        if parent != None:
+            new_obj.parent = parent
 
-        if rotation != None:
-            obj.rotation_mode = 'QUATERNION'
-            obj.rotation_quaternion = mathutils.Quaternion(mathutils.Vector((rotation[3], rotation[0], rotation[1],
-                                                                             rotation[2])))
+        pos = tuple((obj_data.origin.x * 0.1, obj_data.origin.y * 0.1, obj_data.origin.z * 0.1))
+        new_obj.location = pos
+
+        if parent == None and fixCoord:
+            rot = tuple((math.radians(90), obj_data.rot_y, 0))
+        else:
+            rot = tuple((0, obj_data.rot_y, 0))
+        new_obj.rotation_euler = rot
 
         context.view_layer.objects.active = None
 
-        return {'FINISHED'}
+        return new_obj
 
-    def set_mesh_parent(self, context, childId, parentId):
-        if parentId != None and childId != None:
-            bpy.data.objects[childId].parent = bpy.data.objects[parentId]
-
-    def create_mesh_surface(self, context, id, sdata: SurfData):
-        mesh = bpy.data.objects[id].data
+    def create_mesh_surface(self, context, obj, sdata: SurfData):
+        mesh = obj.data
 
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
-        #print(sdata.i)
-
         for vert in sdata.v:
-            vert_pos = [vert[0][0], vert[1][0], vert[2][0]]
+            vert_pos = [vert[0], vert[1], vert[2]]
+            #print(vert_pos)
             bm.verts.new(vert_pos)
 
         bm.verts.ensure_lookup_table()
@@ -67,6 +61,4 @@ class GM2MeshCreator(Operator, AddObjectHelper):
         return {'FINISHED'}
 
     def execute(self, context):
-        #create_mesh(self, context, None)
-
         return {'FINISHED'}

@@ -16,7 +16,7 @@ class ToolsSetup(Operator, ImportHelper):
         name="Face Index Override Mode",
         description="Forces the addon to load the model using a specific index format.\nMess with this if an object won't load using default settings.\n",
         items=(
-            ('OPT_A', "No override", "Allows the addon to decide what format each model should use."),
+            ('OPT_A', "No override", "Allows the addon to decide what format each model should use"),
             ('OPT_B', "9 byte format", ""),
             ('OPT_C', "9 byte format (extra data)", ""),
             ('OPT_D', "11 byte format", ""),
@@ -30,10 +30,24 @@ class ToolsSetup(Operator, ImportHelper):
         default=False,
     )
 
-    def start_plugin(self, context, filepath, idxMode):
-        GM2ModelImporter.import_models(self, context, filepath, idxMode, self.fix_coord_space)
+    smooth_shading: BoolProperty(
+        name="Use Smooth Shading",
+        description="",
+        default=False,
+    )
+
+    dev_testing: BoolProperty(
+        name="Enable Testing Features",
+        description="Enables experimental features that are still being tested.\nProbably don't turn this on",
+        default=False,
+    )
+
+    def start_plugin(self, context, filepath):
+        GM2ModelImporter.set_import_variables(self, context, self.index_override, self.fix_coord_space,
+                                              self.smooth_shading, self.dev_testing)
+        GM2ModelImporter.load_model_data(self, context, filepath)
 
     def execute(self, context):
-        self.start_plugin(context, self.filepath, self.index_override)
+        self.start_plugin(context, self.filepath)
 
         return {'FINISHED'}
