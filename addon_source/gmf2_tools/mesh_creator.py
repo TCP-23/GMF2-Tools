@@ -26,9 +26,9 @@ class GM2MeshCreator(Operator, AddObjectHelper):
         new_obj.location = pos
 
         if parent == None and fixCoord:
-            rot = tuple((math.radians(90), obj_data.rot_y, 0))
+            rot = tuple((math.radians(90), obj_data.rot_y, obj_data.rot_z))
         else:
-            rot = tuple((0, obj_data.rot_y, 0))
+            rot = tuple((0, obj_data.rot_y, obj_data.rot_z))
         new_obj.rotation_euler = rot
 
         context.view_layer.objects.active = None
