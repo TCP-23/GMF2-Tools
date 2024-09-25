@@ -19,7 +19,7 @@ class GM2ModelImporter(Operator):
     smooth_shading = False
     testing_features = False
 
-    def set_import_variables(self, context, indexOverride, fixCoordinateSpace, useSmoothShading, devFeatures):
+    def set_import_variables(self, indexOverride, fixCoordinateSpace, useSmoothShading, devFeatures):
         self.idx_mode = indexOverride
         self.fix_coord = fixCoordinateSpace
         self.smooth_shading = useSmoothShading
@@ -92,12 +92,26 @@ class GM2ModelImporter(Operator):
 
                             uvs.append(tuple((u, v)))
 
+                        validCount = 0
+                        flipIdxs = 0
                         for iii in range(len(idxs) - 2):
-                            va = idxs[iii].i + 1
-                            vb = idxs[iii + 1].i + 1
-                            vc = idxs[iii + 2].i + 1
+                            validCount = validCount + 1
+                            if validCount >= 4:
+                                validCount = 1
 
-                            indices.append(tuple((va, vb, vc)))
+                            if validCount == 1:
+                                #flipIdxs = flipIdxs + 1
+
+                                va = idxs[iii].i + 1
+                                vb = idxs[iii + 1].i + 1
+                                vc = idxs[iii + 2].i + 1
+
+                                #if flipIdxs % 2 == 0:
+                                    #indices.append(tuple((vc, vb, va)))
+                                #else:
+                                    #indices.append(tuple((va, vb, vc)))
+
+                                indices.append(tuple((va, vb, vc)))
 
                         last_index += len(idxs)
 

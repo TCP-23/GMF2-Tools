@@ -43,7 +43,7 @@ class ToolsSetup(Operator, ImportHelper):
     )
 
     def start_plugin(self, context, filepath):
-        GM2ModelImporter.set_import_variables(self, context, self.index_override, self.fix_coord_space,
+        GM2ModelImporter.set_import_variables(self, self.index_override, self.fix_coord_space,
                                               self.smooth_shading, self.dev_testing)
         GM2ModelImporter.load_model_data(self, context, filepath)
 
