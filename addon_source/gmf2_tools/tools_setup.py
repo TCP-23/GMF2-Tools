@@ -27,13 +27,13 @@ class ToolsSetup(Operator, ImportHelper):
     fix_coord_space: BoolProperty(
         name="Fix Coordinate Space",
         description="Forces the object to obey Blender's default coordinate space",
-        default=False,
+        default=True,
     )
 
     smooth_shading: BoolProperty(
         name="Use Smooth Shading",
         description="",
-        default=False,
+        default=True,
     )
 
     dev_testing: BoolProperty(
