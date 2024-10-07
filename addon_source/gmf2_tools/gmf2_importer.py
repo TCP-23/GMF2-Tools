@@ -15,12 +15,14 @@ class GM2ModelImporter(Operator):
     bl_label = "Import GMF2 model"
 
     idx_mode = 'OPT_A'
+    armature_mode = 'OPT_A'
     fix_coord = False
     smooth_shading = False
     testing_features = False
 
-    def set_import_variables(self, indexOverride, fixCoordinateSpace, useSmoothShading, devFeatures):
+    def set_import_variables(self, indexOverride, armMode, fixCoordinateSpace, useSmoothShading, devFeatures):
         self.idx_mode = indexOverride
+        self.armature_mode = armMode
         self.fix_coord = fixCoordinateSpace
         self.smooth_shading = useSmoothShading
         self.testing_features = devFeatures
@@ -32,10 +34,24 @@ class GM2ModelImporter(Operator):
         if gm2.nmh2_identifier == 4294967295:
             isNmh2 = True
 
+        armature = {}
         objects = {}
+        valid_objects = {}
 
         for i, world_object in enumerate(gm2.world_objects):
-            objects[world_object.off] = world_object
+            if world_object.name == "ROOT" and world_object.surfaces == None:
+                armature[world_object.off] = world_object
+            elif world_object.off_parent in armature:
+                armature[world_object.off] = world_object
+            else:
+                objects[world_object.off] = world_object
+
+        if self.armature_mode == 'OPT_A':
+            valid_objects = armature | objects
+        elif self.armature_mode == 'OPT_B':
+            valid_objects = objects
+        else:
+            valid_objects = armature
 
         #order of operations:
         #create object
@@ -47,13 +63,16 @@ class GM2ModelImporter(Operator):
         #load geometry
         #load children of our object
 
-        GM2ModelImporter.import_objects(self, context, objects, gm2.world_objects[0].off,
+        GM2ModelImporter.import_objects(self, context, valid_objects, next(iter(valid_objects)),
                                         None, isNmh2)
 
     def import_objects(self, context, model_data, _off, parent, isNmh2):
         next_offset = _off
 
         while next_offset != 0:
+            if next_offset not in model_data:
+                return
+
             obj_data = model_data[next_offset]
             new_obj = GM2MeshCreator.create_object(self, context, obj_data, parent, self.fix_coord)
 
@@ -121,7 +140,7 @@ class GM2ModelImporter(Operator):
                 if self.smooth_shading:
                     new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
 
-            if (obj_data.off_firstchild != 0):
+            if (obj_data.off_firstchild in model_data):
                 GM2ModelImporter.import_objects(self, context, model_data, obj_data.off_firstchild,
                                                 new_obj, isNmh2)
             next_offset = obj_data.off_next

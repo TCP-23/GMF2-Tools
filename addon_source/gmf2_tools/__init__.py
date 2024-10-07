@@ -8,7 +8,7 @@ from .mesh_creator import GM2MeshCreator
 
 
 def menu_func_import(self, context):
-    self.layout.operator(ToolsSetup.bl_idname, text="No More Heroes Model (.gm2)")
+    self.layout.operator(ToolsSetup.bl_idname, text="Grasshopper Manufacture Model (.gm2)")
 
 
 def register():
