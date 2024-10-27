@@ -4,7 +4,7 @@ import bpy
 
 from .tools_setup import ToolsSetup
 from .gmf2_importer import GM2ModelImporter
-from .mesh_creator import GM2MeshCreator
+from .object_creator import GM2ObjectCreator
 
 
 def menu_func_import(self, context):

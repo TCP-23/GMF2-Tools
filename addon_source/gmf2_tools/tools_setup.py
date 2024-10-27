@@ -26,7 +26,7 @@ class ToolsSetup(Operator, ImportHelper):
         default='OPT_A',
     )
 
-    import_armature: EnumProperty(
+    armature_mode: EnumProperty(
         name="Armature Import Mode",
         description="",
         items=(
@@ -37,10 +37,15 @@ class ToolsSetup(Operator, ImportHelper):
         default='OPT_A'
     )
 
-    fix_coord_space: BoolProperty(
-        name="Fix Coordinate Space",
-        description="Forces the object to obey Blender's default coordinate space",
-        default=True,
+    up_axis: EnumProperty(
+        name="Up Axis",
+        description="",
+        items=(
+            ('OPT_A', "X", ""),
+            ('OPT_B', "Y", ""),
+            ('OPT_C', "Z", ""),
+        ),
+        default='OPT_B'
     )
 
     smooth_shading: BoolProperty(
@@ -49,16 +54,8 @@ class ToolsSetup(Operator, ImportHelper):
         default=True,
     )
 
-    dev_testing: BoolProperty(
-        name="Enable Testing Features",
-        description="Enables experimental features that are still being tested.\nProbably don't turn this on",
-        default=False,
-    )
-
     def start_plugin(self, context, filepath):
-        GM2ModelImporter.set_import_variables(self, self.index_override, self.import_armature, self.fix_coord_space,
-                                              self.smooth_shading, self.dev_testing)
-        GM2ModelImporter.load_model_data(self, context, filepath)
+        GM2ModelImporter.load_file_data(self, context, filepath)
 
     def execute(self, context):
         self.start_plugin(context, self.filepath)

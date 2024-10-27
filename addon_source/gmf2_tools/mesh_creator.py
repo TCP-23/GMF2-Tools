@@ -2,6 +2,7 @@ import bpy
 import bmesh
 from collections import namedtuple
 from bpy.types import Operator
+from bpy_extras import object_utils
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 import math
 
@@ -11,6 +12,8 @@ class GM2MeshCreator(Operator, AddObjectHelper):
     bl_label = "Create GMF2 mesh"
 
     SurfData = namedtuple("SurfData", "v i uvs")
+
+    #OLD CODE
 
     def create_object(self, context, obj_data, parent, fixCoord):
         obj_mesh = bpy.data.meshes.new(obj_data.name)

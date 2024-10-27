@@ -7,10 +7,10 @@ Uses code from https://github.com/sevonj/nmh_reverse
 
 A [Blender](https://www.blender.org) extension that allows Blender to import GMF2 files.
 
-## Requirements:
+## Requirements
 - Blender version 4.2 or higher
 
-## Installation:
+## Installation
 - Download the extension version you want from the Releases tab on the right (don't unzip!)
 - Open the Extensions tab in Blender (Edit > Preferences > Get Extensions)
 - Click the small arrow in the top right of the tab
@@ -38,14 +38,17 @@ I'm working on automating this process, but for now use this method:
 - Scale the UVs by -1 over the X axis (S > Y > -1)
 - Your UVs should now be mirrored properly
 
-## Feature Checklist:
+## Feature Checklist
 - ~~Vertices~~
 - ~~Indices~~
 - ~~Object Hierarchy~~
 - ~~Object Origins~~
 - ~~Object Rotations~~
 - ~~UVs~~
-- Armature
-- Materials
 - Normals
+- Armature
+- Weight Data
+- Materials
 - Textures
+- Animations
+- Blood+ support
