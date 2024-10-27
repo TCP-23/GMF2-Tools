@@ -26,7 +26,7 @@ class ToolsSetup(Operator, ImportHelper):
         default='OPT_A',
     )
 
-    armature_mode: EnumProperty(
+    """armature_mode: EnumProperty(
         name="Armature Import Mode",
         description="",
         items=(
@@ -35,11 +35,11 @@ class ToolsSetup(Operator, ImportHelper):
             ('OPT_C', "Import armature only", "Will import models parented to the armature (e.g. most faces)"),
         ),
         default='OPT_A'
-    )
+    )"""
 
     up_axis: EnumProperty(
         name="Up Axis",
-        description="",
+        description="The up axis of the model you are trying to import. \nMess with this if your model imports in the wrong orientation.\n",
         items=(
             ('OPT_A', "X", ""),
             ('OPT_B', "Y", ""),
@@ -50,7 +50,7 @@ class ToolsSetup(Operator, ImportHelper):
 
     smooth_shading: BoolProperty(
         name="Use Smooth Shading",
-        description="",
+        description="Defaults the model to use 'smooth' shading instead of 'flat' shading. \nLeave this on in most cases",
         default=True,
     )
 

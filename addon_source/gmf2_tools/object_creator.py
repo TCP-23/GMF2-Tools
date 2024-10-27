@@ -6,6 +6,10 @@ from bpy_extras import object_utils
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 import math
 
+from .target_game import GameTarget_Enum
+from .target_game import TargetGame
+
+
 class GM2ObjectCreator(Operator, AddObjectHelper):
     """Creates object data from a GMF2 file"""
     bl_idname = "gm2_importer.object_creation"
@@ -25,10 +29,19 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         # set position
         # set rotation
 
+        #if TargetGame.gameId == GameTarget_Enum.NMH2:
+            #position = tuple((objData.obj.origin.x * 0.1, objData.obj.origin.z * 0.1, -(objData.obj.origin.y * 0.1)))
+        #else:
         position = tuple((objData.obj.origin.x * 0.1, objData.obj.origin.y * 0.1, objData.obj.origin.z * 0.1))
         new_obj.location = position
 
-        rotation = tuple((0, objData.obj.rot_y, objData.obj.rot_z))
+        if (objData.parent_obj is None) and (self.up_axis != 'OPT_C'):
+            if self.up_axis == 'OPT_A':
+                rotation = tuple((0, objData.obj.rot_y + math.radians(90), objData.obj.rot_z))
+            else:
+                rotation = tuple((math.radians(90), objData.obj.rot_y, objData.obj.rot_z))
+        else:
+            rotation = tuple((0, objData.obj.rot_y, objData.obj.rot_z))
         new_obj.rotation_euler = rotation
 
         return new_obj

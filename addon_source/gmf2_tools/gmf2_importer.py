@@ -1,8 +1,10 @@
 import bpy
 import struct
-from enum import Enum
 from collections import namedtuple
 from bpy.types import Operator
+
+from .target_game import GameTarget_Enum
+from .target_game import TargetGame
 
 from .gmf2 import Gmf2
 from .object_creator import GM2ObjectCreator
@@ -11,19 +13,14 @@ Vec3 = namedtuple("Vec3", "x y z")
 Gm2Idx = namedtuple("Gm2Idx", "i u v n")
 
 
-class TargetGame(Enum):
-    UNK = 1
-    NMH1 = 2
-    NMH2 = 3
-    BLOOD = 4
-
-
 class ProcessedObject:
     obj = None
     parent_obj = None
     first_child_obj = None
     prev_obj = None
     next_obj = None
+
+    isBone = False
 
     def __init__(self, _obj, _parent_obj, _first_child_obj, _prev_obj, _next_obj):
         self.obj = _obj
@@ -51,8 +48,10 @@ def sort_objects(objs):
 
         processed_obj = ProcessedObject(world_object, parent, first_child, prev_obj, next_obj)
         if processed_obj.obj.name == "ROOT" and processed_obj.obj.surfaces is None:
+            processed_obj.isBone = True
             sorted_bones.append(processed_obj)
         elif processed_obj.parent_obj in sorted_bones and processed_obj.obj.surfaces is None:  # make sure this can't throw error if no parent
+            processed_obj.isBone = True
             sorted_bones.append(processed_obj)
         else:
             sorted_objs.append(processed_obj)
@@ -77,8 +76,6 @@ class GM2ModelImporter(Operator):
     bl_idname = "gm2_importer.model_data"
     bl_label = "Import GMF2 model"
 
-    gameID = TargetGame.UNK
-
     obj_list = {}
 
     def load_file_data(self, context, filepath):
@@ -87,9 +84,9 @@ class GM2ModelImporter(Operator):
         gm2: Gmf2 = Gmf2.from_file(filepath)
 
         if gm2.nmh2_identifier == 4294967295:
-            GM2ModelImporter.gameID = TargetGame.NMH2
+            TargetGame.gameId = GameTarget_Enum.NMH2
         else:
-            GM2ModelImporter.gameID = TargetGame.NMH1
+            TargetGame.gameId = GameTarget_Enum.NMH1
 
         unsorted_objects = {}
         for i, world_object in enumerate(gm2.world_objects):
@@ -97,10 +94,8 @@ class GM2ModelImporter(Operator):
 
         objects, bones = sort_objects(unsorted_objects)
 
-        if self.armature_mode != 'OPT_B':
-            GM2ModelImporter.import_bones(self, context, bones)
-        if self.armature_mode != 'OPT_C':
-            GM2ModelImporter.import_objects(self, context, objects)
+        GM2ModelImporter.import_bones(self, context, bones)
+        GM2ModelImporter.import_objects(self, context, objects)
 
     def import_objects(self, context, objects):
         for i, processed_obj in enumerate(objects):
@@ -217,11 +212,11 @@ class GM2ModelImporter(Operator):
 
         if surf_id == 0:
             for v in surf.v_buf:
-                if GM2ModelImporter.gameID == TargetGame.NMH1:
+                if TargetGame.gameId == GameTarget_Enum.NMH1:
                     vertPos = Vec3((v.x / pow(2, processed_obj.obj.v_divisor)) * 0.1,
                                    (v.y / pow(2, processed_obj.obj.v_divisor)) * 0.1,
                                    (v.z / pow(2, processed_obj.obj.v_divisor)) * 0.1)
-                elif GM2ModelImporter.gameID == TargetGame.NMH2:
+                elif TargetGame.gameId == GameTarget_Enum.NMH2:
                     vertPos = Vec3(v.x * 0.1, v.y * 0.1, v.z * 0.1)
                 else:
                     return [], [], []
