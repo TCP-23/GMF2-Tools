@@ -52,18 +52,23 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
     def create_bone(self, boneData):
         pass
 
+    def create_mesh_vertices(self):
+        pass
+
     def create_mesh_surface(self, mesh, sdata: SurfData):
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
-        for vert in sdata.verts:
-            bm.verts.new([vert[0], vert[1], vert[2]])
+        if len(sdata.verts) > 0:
+            for vert in sdata.verts:
+                bm.verts.new([vert[0], vert[1], vert[2]])
+            bm.to_mesh(mesh)
 
         bm.verts.ensure_lookup_table()
 
         uv_layer = bm.loops.layers.uv.verify()
 
-        iter = 0
+        iteration = 0
         for idx_group in sdata.idxs:
             if idx_group.count(idx_group[0]) == 1 and idx_group.count(idx_group[1]) == 1 and idx_group.count(idx_group[2]) == 1:
                 if not bm.faces.get([bm.verts[j-1] for j in idx_group]):
@@ -71,11 +76,11 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
                     for loop in face.loops:
                         vert = loop.vert
                         if GM2ObjectCreator.normals.get(vert.index) is None and vert.index >= 0:
-                            GM2ObjectCreator.normals[vert.index] = sdata.norms[iter]
+                            GM2ObjectCreator.normals[vert.index] = sdata.norms[iteration]
 
                         loop_uv = loop[uv_layer]
-                        loop_uv.uv = sdata.uvs[iter]
-                        iter += 1
+                        loop_uv.uv = sdata.uvs[iteration]
+                        iteration += 1
 
         bm.to_mesh(mesh)
         bm.free()
@@ -83,16 +88,12 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
 
     def apply_normals(self, mesh):
         normals = []
-        #for i in range(len(mesh.vertices)):
-            #pass
 
-        while len(normals) < len(GM2ObjectCreator.normals):
-            for k, v in GM2ObjectCreator.normals.items():
-                if int(k) < 0 or int(k) > len(GM2ObjectCreator.normals):
-                    break
+        for i in range(len(mesh.vertices)):
+            if i < 0 or i > len(GM2ObjectCreator.normals):
+                return
 
-                if len(normals) == int(k):
-                    normals.append(v)
+            normals.append(GM2ObjectCreator.normals[i])
 
         mesh.normals_split_custom_set_from_vertices(normals)
-        GM2ObjectCreator.normals = normals
+        GM2ObjectCreator.normals = {}

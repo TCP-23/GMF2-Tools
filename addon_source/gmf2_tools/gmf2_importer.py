@@ -99,7 +99,6 @@ class GM2ModelImporter(Operator):
 
     def import_objects(self, context, objects):
         for i, processed_obj in enumerate(objects):
-            print("Importing ", processed_obj.obj.name)
             new_obj = GM2ObjectCreator.create_object(self, context, processed_obj, self.up_axis)
             GM2ModelImporter.obj_list[processed_obj.obj] = new_obj
 
@@ -114,8 +113,8 @@ class GM2ModelImporter(Operator):
                     GM2ObjectCreator.create_mesh_surface(self, new_obj.data,
                                                          GM2ObjectCreator.SurfData(verts, idxs, uvs, normals))
 
-                #if len(GM2ObjectCreator.normals) > 0:
-                    #GM2ObjectCreator.apply_normals(self, new_obj.data)
+                if len(GM2ObjectCreator.normals) > 0:
+                    GM2ObjectCreator.apply_normals(self, new_obj.data)
 
                 if self.smooth_shading:
                     new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
@@ -225,7 +224,7 @@ class GM2ModelImporter(Operator):
 
         for idx in mesh_strips:
             normals.append(idx.n)
-            uvs.append(tuple((idx.u / pow(2, 10), idx.v / pow(2, 10))))
+            uvs.append(tuple((idx.u / pow(2, 10), -(idx.v / pow(2, 10)) + 1)))
 
         valid_idx_count = 0
         for iii in range(len(mesh_strips)-2):
