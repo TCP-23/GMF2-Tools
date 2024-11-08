@@ -25,19 +25,6 @@ Games that are currently supported by the extension are:
 
 Other games that use the GMF2 model format might have support added in the future.
 
-## UV Mirroring
-
-As of 0.4.1, UVs currently need to be manually mirrored for them to look right.
-I'm working on automating this process, but for now use this method:
-
-- Open the UVs of your object in a UV editor window
-- Open the texture that the object uses in the UV editor window as well
-- Set your Blender cursor to the center of the texture (Default shortcut: Shift + C)
-- Change your Rotation/Scale pivot mode to use the Blender Cursor
-- Select all the UVs of your object while tabbed into the UV editor window (Default shortcut: A)
-- Scale the UVs by -1 over the X axis (S > Y > -1)
-- Your UVs should now be mirrored properly
-
 ## Feature Checklist
 - ~~Vertices~~
 - ~~Indices~~
@@ -45,7 +32,7 @@ I'm working on automating this process, but for now use this method:
 - ~~Object Origins~~
 - ~~Object Rotations~~
 - ~~UVs~~
-- Normals
+- ~~Normals~~
 - Armature
 - Weight Data
 - Materials

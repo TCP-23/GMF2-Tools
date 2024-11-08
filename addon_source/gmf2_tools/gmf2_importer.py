@@ -202,7 +202,7 @@ class GM2ModelImporter(Operator):
         mesh_strips = GM2ModelImporter.get_mesh_strips(self, surf, processed_obj)
 
         if not mesh_strips:
-            return [], [], []
+            return [], [], [], []
 
         verts = []
         indices = []
@@ -218,7 +218,7 @@ class GM2ModelImporter(Operator):
                 elif TargetGame.gameId == GameTarget_Enum.NMH2:
                     vertPos = Vec3(v.x * 0.1, v.y * 0.1, v.z * 0.1)
                 else:
-                    return [], [], []
+                    return [], [], [], []
 
                 verts.append(vertPos)
 
