@@ -8,11 +8,6 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Gmf2(KaitaiStruct):
-    """Grasshopper Manufacture
-    No More Heroes world chunk
-    GMF - Grasshopper Model File?
-    Japanese text encoding.
-    """
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
         self._parent = _parent
@@ -41,8 +36,8 @@ class Gmf2(KaitaiStruct):
         if not self._unnamed9 == b"\x00\x00\x00\x00":
             raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed9, self._io, u"/seq/9")
         self.off_materials = self._io.read_u4le()
-        self.unk_8 = self._io.read_u4le()
-        self.unk_9 = self._io.read_u4le()
+        self.unk_0x30 = self._io.read_u4le()
+        self.unk_0x34 = self._io.read_u4le()
         self._unnamed13 = self._io.read_bytes(16)
         if not self._unnamed13 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
             raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed13, self._io, u"/seq/13")
@@ -55,8 +50,10 @@ class Gmf2(KaitaiStruct):
         self._unnamed16 = self._io.read_bytes(8)
         if not self._unnamed16 == b"\x00\x00\x00\x00\x00\x00\x00\x00":
             raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed16, self._io, u"/seq/16")
-        if self.nmh2_identifier == 4294967295:
+        if self.game_identifier == 4294967295:
             self._unnamed17 = self._io.read_bytes(16)
+            if not self._unnamed17 == b"\xFF\xFF\xFF\xFF\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\xFF\xFF\xFF\xFF\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed17, self._io, u"/seq/17")
 
         self.textures = []
         for i in range(self.num_textures):
@@ -72,44 +69,36 @@ class Gmf2(KaitaiStruct):
 
 
     class WorldObject(KaitaiStruct):
-        def __init__(self, off, _io, _parent=None, _root=None):
+        def __init__(self, false, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
             self._root = _root if _root else self
-            self.off = off
+            self.false = false
             self._read()
 
         def _read(self):
             self.name = (KaitaiStream.bytes_terminate(self._io.read_bytes(8), 0, False)).decode(u"SHIFT-JIS")
-            self.unk_0 = self._io.read_u4le()
+            self.flags = self._io.read_u4le()
             self.off_v_buf = self._io.read_u4le()
             self.off_parent = self._io.read_u4le()
-            self.off_firstchild = self._io.read_u4le()
+            self.off_first_child = self._io.read_u4le()
             self.off_prev = self._io.read_u4le()
             self.off_next = self._io.read_u4le()
-            self.off_surf_list = self._io.read_u4le()
-            self._unnamed8 = self._io.read_bytes(4)
-            self.off_unk = self._io.read_u4le()
-            self.v_divisor = self._io.read_s4le()
-            self.origin = Gmf2.FlVector(self._io, self, self._root)
-            self.unkf_a = self._io.read_f4le()
-            self.unk_b = self._io.read_f4le()
-            self.rot_y = self._io.read_f4le()
-            self.rot_z = self._io.read_f4le()
-            self.unkf_11 = self._io.read_f4le()
-            self.scale = Gmf2.FlVector(self._io, self, self._root)
-            self.off_data_c = self._io.read_u4le()
-            self.cullbox_origin = Gmf2.FlVector(self._io, self, self._root)
-            self.unkf_16 = self._io.read_f4le()
-            self.cullbox_size = Gmf2.FlVector(self._io, self, self._root)
-            self.unkf_1a = self._io.read_f4le()
-            if self._root.nmh2_identifier == 4294967295:
-                self.nmh2_unk_2 = self._io.read_bytes(64)
+            self.off_surfaces = self._io.read_u4le()
+            self.unk_0x24 = self._io.read_f4le()
+            self.unk_0x28 = self._io.read_u4le()
+            self.v_divisor = self._io.read_u4le()
+            self.position = Gmf2.FlVector4Le(self._io, self, self._root)
+            self.rotation = Gmf2.FlVector4Le(self._io, self, self._root)
+            self.scale = Gmf2.FlVectorLe(self._io, self, self._root)
+            self.off_v_format = self._io.read_u4le()
+            self.cullbox_position = Gmf2.FlVector4Le(self._io, self, self._root)
+            self.cullbox_size = Gmf2.FlVector4Le(self._io, self, self._root)
+            if self._root.game_identifier == 4294967295:
+                self.unk_padding = self._io.read_bytes(64)
 
 
         class Surface(KaitaiStruct):
-            """Headers are in a linked list.
-            """
             def __init__(self, off_v_buf, v_divisor, _io, _parent=None, _root=None):
                 self._io = _io
                 self._parent = _parent
@@ -123,13 +112,13 @@ class Gmf2(KaitaiStruct):
                 self.off_next = self._io.read_u4le()
                 self.off_data = self._io.read_u4le()
                 self.off_material = self._io.read_u4le()
-                self.unk_4 = self._io.read_u2le()
+                self.unk_0x10 = self._io.read_u2le()
                 self.num_v = self._io.read_u2le()
-                self.unk_5 = self._io.read_u4le()
-                self.unk_6 = self._io.read_u2le()
-                self.unk_7 = self._io.read_u2le()
-                self.unk_8 = self._io.read_u2le()
-                self.unk_9 = self._io.read_u2le()
+                self.unk_0x14 = self._io.read_u4le()
+                self.unk_0x18 = self._io.read_u2le()
+                self.unk_0x1a = self._io.read_u2le()
+                self.unk_0x1c = self._io.read_u2le()
+                self.unk_0x1e = self._io.read_u2le()
 
             class Surfdata(KaitaiStruct):
                 def __init__(self, _io, _parent=None, _root=None):
@@ -139,16 +128,12 @@ class Gmf2(KaitaiStruct):
                     self._read()
 
                 def _read(self):
-                    self.data_size = self._io.read_u4be()
-                    self.num_v_smthn_total = self._io.read_u2be()
-                    self.unk_2 = self._io.read_u2be()
-                    self._unnamed3 = self._io.read_bytes(8)
-                    if not self._unnamed3 == b"\x00\x00\x00\x00\x00\x00\x00\x00":
-                        raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed3, self._io, u"/types/world_object/types/surface/types/surfdata/seq/3")
-                    self._unnamed4 = self._io.read_bytes(16)
-                    if not self._unnamed4 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
-                        raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed4, self._io, u"/types/world_object/types/surface/types/surfdata/seq/4")
-                    self.data = self._io.read_bytes(self.data_size)
+                    self.len_data = self._io.read_u4be()
+                    self.num_vertices = self._io.read_u2be()
+                    self.unknown = self._io.read_u2be()
+                    self._unnamed3 = self._io.read_bytes(24)
+                    if not self._unnamed3 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
+                        raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed3, self._io, u"/types/world_object/types/surface/types/surfdata/seq/3")
 
 
             class Tristrip(KaitaiStruct):
@@ -159,18 +144,20 @@ class Gmf2(KaitaiStruct):
                     self._read()
 
                 def _read(self):
-                    self.unk_0 = self._io.read_u2be()
-                    if self.unk_0 == 153:
-                        self.num_smthn = self._io.read_u2be()
+                    self.command = self._io.read_u2be()
+                    self.num_v = self._io.read_u2be()
+                    self.idx_data = []
+                    for i in range(self.num_v):
+                        _on = self._parent.tristrip_type_data.tristrip_type
+                        if _on == 18253:
+                            self.idx_data.append(Gmf2.WorldObject.Surface.Tristrip.Index11bB(self._io, self, self._root))
+                        elif _on == 1196246578:
+                            self.idx_data.append(Gmf2.WorldObject.Surface.Tristrip.Index9b(self._io, self, self._root))
+                        else:
+                            self.idx_data.append(Gmf2.WorldObject.Surface.Tristrip.Index11bA(self._io, self, self._root))
 
-                    if self.unk_0 == 153:
-                        self.unk_1 = []
-                        for i in range(self.num_smthn):
-                            self.unk_1.append(Gmf2.WorldObject.Surface.Tristrip.I(self._io, self, self._root))
 
-
-
-                class I(KaitaiStruct):
+                class Index11bA(KaitaiStruct):
                     def __init__(self, _io, _parent=None, _root=None):
                         self._io = _io
                         self._parent = _parent
@@ -179,21 +166,115 @@ class Gmf2(KaitaiStruct):
 
                     def _read(self):
                         self.idx = self._io.read_u2be()
-                        self.unk = self._io.read_bytes(9)
+                        self.normal = Gmf2.U1Vector(self._io, self, self._root)
+                        self.color = self._io.read_u2be()
+                        self.u = self._io.read_u2be()
+                        self.v = self._io.read_u2be()
 
+
+                class Index11bB(KaitaiStruct):
+                    def __init__(self, _io, _parent=None, _root=None):
+                        self._io = _io
+                        self._parent = _parent
+                        self._root = _root if _root else self
+                        self._read()
+
+                    def _read(self):
+                        self.unk_6 = self._io.read_u2be()
+                        self.idx = self._io.read_u2be()
+                        self.normal = Gmf2.U1Vector(self._io, self, self._root)
+                        self.u = self._io.read_u2be()
+                        self.v = self._io.read_u2be()
+
+
+                class Index9b(KaitaiStruct):
+                    def __init__(self, _io, _parent=None, _root=None):
+                        self._io = _io
+                        self._parent = _parent
+                        self._root = _root if _root else self
+                        self._read()
+
+                    def _read(self):
+                        self.idx = self._io.read_u2be()
+                        self.normal = Gmf2.U1Vector(self._io, self, self._root)
+                        self.u = self._io.read_u2be()
+                        self.v = self._io.read_u2be()
+
+
+
+            class TristripTypeInfo(KaitaiStruct):
+                def __init__(self, _io, _parent=None, _root=None):
+                    self._io = _io
+                    self._parent = _parent
+                    self._root = _root if _root else self
+                    self._read()
+
+                def _read(self):
+                    pass
+
+                @property
+                def tr_len_8(self):
+                    if hasattr(self, '_m_tr_len_8'):
+                        return self._m_tr_len_8
+
+                    io = self._root._io
+                    _pos = io.pos()
+                    io.seek((self._parent.off_data + 34))
+                    self._m_tr_len_8 = io.read_u2be()
+                    io.seek(_pos)
+                    return getattr(self, '_m_tr_len_8', None)
+
+                @property
+                def second_strip_command(self):
+                    if hasattr(self, '_m_second_strip_command'):
+                        return self._m_second_strip_command
+
+                    io = self._root._io
+                    _pos = io.pos()
+                    io.seek(((self._parent.off_data + 32) + ((self.tr_len_8 * 11) + 4)))
+                    self._m_second_strip_command = io.read_u2be()
+                    io.seek(_pos)
+                    return getattr(self, '_m_second_strip_command', None)
+
+                @property
+                def tristrip_length(self):
+                    if hasattr(self, '_m_tristrip_length'):
+                        return self._m_tristrip_length
+
+                    if  ((self.second_strip_command == 153) or ( ((self.second_strip_command == 0) and (self.tr_len_8 == self._parent.surface_data.num_vertices)) )) :
+                        self._m_tristrip_length = 11
+
+                    return getattr(self, '_m_tristrip_length', None)
+
+                @property
+                def tristrip_type(self):
+                    if hasattr(self, '_m_tristrip_type'):
+                        return self._m_tristrip_type
+
+                    if  ((self._parent._parent.off_v_format == 1065353216) or (self._parent._parent.off_v_format == 0)) :
+                        _pos = self._io.pos()
+                        self._io.seek(0)
+                        _on = self.tristrip_length
+                        if _on == 11:
+                            self._m_tristrip_type = self._io.read_u2be()
+                        elif _on == 9:
+                            self._m_tristrip_type = self._io.read_u4be()
+                        self._io.seek(_pos)
+
+                    return getattr(self, '_m_tristrip_type', None)
 
 
             @property
-            def data(self):
-                if hasattr(self, '_m_data'):
-                    return self._m_data
+            def surface_data(self):
+                if hasattr(self, '_m_surface_data'):
+                    return self._m_surface_data
 
                 io = self._root._io
                 _pos = io.pos()
                 io.seek(self.off_data)
-                self._m_data = Gmf2.WorldObject.Surface.Surfdata(io, self, self._root)
+                self._m_surface_data = Gmf2.WorldObject.Surface.Surfdata(io, self, self._root)
                 io.seek(_pos)
-                return getattr(self, '_m_data', None)
+                return getattr(self, '_m_surface_data', None)
 
             @property
             def v_buf(self):
@@ -214,30 +295,58 @@ class Gmf2(KaitaiStruct):
                 io.seek(_pos)
                 return getattr(self, '_m_v_buf', None)
 
+            @property
+            def tristrip_type_data(self):
+                if hasattr(self, '_m_tristrip_type_data'):
+                    return self._m_tristrip_type_data
 
-        @property
-        def data_c(self):
-            if hasattr(self, '_m_data_c'):
-                return self._m_data_c
+                io = self._root._io
+                self._m_tristrip_type_data = Gmf2.WorldObject.Surface.TristripTypeInfo(io, self, self._root)
+                return getattr(self, '_m_tristrip_type_data', None)
 
-            if  ((self.off_data_c != 1065353216) and (self.off_data_c != 0)) :
+            @property
+            def strips(self):
+                if hasattr(self, '_m_strips'):
+                    return self._m_strips
+
                 io = self._root._io
                 _pos = io.pos()
-                io.seek(self.off_data_c)
-                self._m_data_c = io.read_bytes(6)
+                io.seek((self.off_data + 32))
+                self._m_strips = []
+                i = 0
+                while True:
+                    _ = Gmf2.WorldObject.Surface.Tristrip(io, self, self._root)
+                    self._m_strips.append(_)
+                    if _.command != 153:
+                        break
+                    i += 1
+                io.seek(_pos)
+                return getattr(self, '_m_strips', None)
+
+
+        @property
+        def v_format(self):
+            if hasattr(self, '_m_v_format'):
+                return self._m_v_format
+
+            if  ((self.off_v_format != 1065353216) and (self.off_v_format != 0)) :
+                io = self._root._io
+                _pos = io.pos()
+                io.seek(self.off_v_format)
+                self._m_v_format = io.read_bytes(6)
                 io.seek(_pos)
 
-            return getattr(self, '_m_data_c', None)
+            return getattr(self, '_m_v_format', None)
 
         @property
         def surfaces(self):
             if hasattr(self, '_m_surfaces'):
                 return self._m_surfaces
 
-            if self.off_surf_list != 0:
+            if self.off_surfaces != 0:
                 io = self._root._io
                 _pos = io.pos()
-                io.seek(self.off_surf_list)
+                io.seek(self.off_surfaces)
                 self._m_surfaces = []
                 i = 0
                 while True:
@@ -251,18 +360,17 @@ class Gmf2(KaitaiStruct):
             return getattr(self, '_m_surfaces', None)
 
 
-    class Align(KaitaiStruct):
-        """Byte alignment
-        """
-        def __init__(self, size, _io, _parent=None, _root=None):
+    class U1Vector(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
             self._root = _root if _root else self
-            self.size = size
             self._read()
 
         def _read(self):
-            self._unnamed0 = self._io.read_bytes(((self.size - self._io.pos()) % self.size))
+            self.x = self._io.read_u1()
+            self.y = self._io.read_u1()
+            self.z = self._io.read_u1()
 
 
     class FlVectorBe(KaitaiStruct):
@@ -276,6 +384,33 @@ class Gmf2(KaitaiStruct):
             self.x = self._io.read_f4be()
             self.y = self._io.read_f4be()
             self.z = self._io.read_f4be()
+
+
+    class FlVector4Le(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.x = self._io.read_f4le()
+            self.y = self._io.read_f4le()
+            self.z = self._io.read_f4le()
+            self.w = self._io.read_f4le()
+
+
+    class FlVectorLe(KaitaiStruct):
+        def __init__(self, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self._read()
+
+        def _read(self):
+            self.x = self._io.read_f4le()
+            self.y = self._io.read_f4le()
+            self.z = self._io.read_f4le()
 
 
     class ShortVector(KaitaiStruct):
@@ -304,12 +439,9 @@ class Gmf2(KaitaiStruct):
             self.off_next = self._io.read_u4le()
             self.unk_3 = self._io.read_u4le()
             self.off_data = self._io.read_u4le()
-            self._unnamed5 = self._io.read_bytes(4)
-            if not self._unnamed5 == b"\x00\x00\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed5, self._io, u"/types/material/seq/5")
-            self._unnamed6 = self._io.read_bytes(4)
-            if not self._unnamed6 == b"\x00\x00\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed6, self._io, u"/types/material/seq/6")
+            self._unnamed5 = self._io.read_bytes(8)
+            if not self._unnamed5 == b"\x00\x00\x00\x00\x00\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed5, self._io, u"/types/material/seq/5")
 
         class MaterialData(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
@@ -322,11 +454,11 @@ class Gmf2(KaitaiStruct):
                 self._unnamed0 = self._io.read_bytes(4)
                 if not self._unnamed0 == b"\x00\x00\x00\x00":
                     raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed0, self._io, u"/types/material/types/material_data/seq/0")
-                self.unk_0x04 = self._io.read_u4le()
                 self.off_texture = self._io.read_u4le()
                 self.unk_3 = self._io.read_u4le()
-                self.shaderparams_a = Gmf2.FlVector4(self._io, self, self._root)
-                self.shaderparams_b = Gmf2.FlVector4(self._io, self, self._root)
+                self.unk_4 = self._io.read_u4le()
+                self.shaderparams_a = Gmf2.FlVector4Le(self._io, self, self._root)
+                self.shaderparams_tint = Gmf2.FlVector4Le(self._io, self, self._root)
 
 
         @property
@@ -342,33 +474,6 @@ class Gmf2(KaitaiStruct):
             return getattr(self, '_m_data', None)
 
 
-    class FlVector(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.x = self._io.read_f4le()
-            self.y = self._io.read_f4le()
-            self.z = self._io.read_f4le()
-
-
-    class FlVector4(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self._read()
-
-        def _read(self):
-            self.x = self._io.read_f4le()
-            self.y = self._io.read_f4le()
-            self.z = self._io.read_f4le()
-            self.w = self._io.read_f4le()
-
-
     class Texture(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -382,32 +487,31 @@ class Gmf2(KaitaiStruct):
             self.off_next = self._io.read_u4le()
             self.off_data = self._io.read_u4le()
             self.unk_0x14 = self._io.read_u4le()
-            self.size = self._io.read_u4le()
-            self.unk_str = (KaitaiStream.bytes_terminate(self._io.read_bytes(4), 0, False)).decode(u"SHIFT-JIS")
+            self.len_data = self._io.read_u4le()
+            self.unk_string = (KaitaiStream.bytes_terminate(self._io.read_bytes(4), 0, False)).decode(u"SHIFT-JIS")
 
         @property
         def data(self):
-            """GHM in-house texture format."""
             if hasattr(self, '_m_data'):
                 return self._m_data
 
             io = self._root._io
             _pos = io.pos()
             io.seek(self.off_data)
-            self._m_data = io.read_bytes(self.size)
+            self._m_data = io.read_bytes(self.len_data)
             io.seek(_pos)
             return getattr(self, '_m_data', None)
 
 
     @property
-    def nmh2_identifier(self):
-        if hasattr(self, '_m_nmh2_identifier'):
-            return self._m_nmh2_identifier
+    def game_identifier(self):
+        if hasattr(self, '_m_game_identifier'):
+            return self._m_game_identifier
 
         _pos = self._io.pos()
         self._io.seek(112)
-        self._m_nmh2_identifier = self._io.read_u4be()
+        self._m_game_identifier = self._io.read_u4be()
         self._io.seek(_pos)
-        return getattr(self, '_m_nmh2_identifier', None)
+        return getattr(self, '_m_game_identifier', None)
 
 
