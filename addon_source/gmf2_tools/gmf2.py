@@ -69,11 +69,11 @@ class Gmf2(KaitaiStruct):
 
 
     class WorldObject(KaitaiStruct):
-        def __init__(self, false, _io, _parent=None, _root=None):
+        def __init__(self, offset, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
             self._root = _root if _root else self
-            self.false = false
+            self.offset = offset
             self._read()
 
         def _read(self):
@@ -134,134 +134,7 @@ class Gmf2(KaitaiStruct):
                     self._unnamed3 = self._io.read_bytes(24)
                     if not self._unnamed3 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
                         raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed3, self._io, u"/types/world_object/types/surface/types/surfdata/seq/3")
-
-
-            class Tristrip(KaitaiStruct):
-                def __init__(self, _io, _parent=None, _root=None):
-                    self._io = _io
-                    self._parent = _parent
-                    self._root = _root if _root else self
-                    self._read()
-
-                def _read(self):
-                    self.command = self._io.read_u2be()
-                    self.num_v = self._io.read_u2be()
-                    self.idx_data = []
-                    for i in range(self.num_v):
-                        _on = self._parent.tristrip_type_data.tristrip_type
-                        if _on == 18253:
-                            self.idx_data.append(Gmf2.WorldObject.Surface.Tristrip.Index11bB(self._io, self, self._root))
-                        elif _on == 1196246578:
-                            self.idx_data.append(Gmf2.WorldObject.Surface.Tristrip.Index9b(self._io, self, self._root))
-                        else:
-                            self.idx_data.append(Gmf2.WorldObject.Surface.Tristrip.Index11bA(self._io, self, self._root))
-
-
-                class Index11bA(KaitaiStruct):
-                    def __init__(self, _io, _parent=None, _root=None):
-                        self._io = _io
-                        self._parent = _parent
-                        self._root = _root if _root else self
-                        self._read()
-
-                    def _read(self):
-                        self.idx = self._io.read_u2be()
-                        self.normal = Gmf2.U1Vector(self._io, self, self._root)
-                        self.color = self._io.read_u2be()
-                        self.u = self._io.read_u2be()
-                        self.v = self._io.read_u2be()
-
-
-                class Index11bB(KaitaiStruct):
-                    def __init__(self, _io, _parent=None, _root=None):
-                        self._io = _io
-                        self._parent = _parent
-                        self._root = _root if _root else self
-                        self._read()
-
-                    def _read(self):
-                        self.unk_6 = self._io.read_u2be()
-                        self.idx = self._io.read_u2be()
-                        self.normal = Gmf2.U1Vector(self._io, self, self._root)
-                        self.u = self._io.read_u2be()
-                        self.v = self._io.read_u2be()
-
-
-                class Index9b(KaitaiStruct):
-                    def __init__(self, _io, _parent=None, _root=None):
-                        self._io = _io
-                        self._parent = _parent
-                        self._root = _root if _root else self
-                        self._read()
-
-                    def _read(self):
-                        self.idx = self._io.read_u2be()
-                        self.normal = Gmf2.U1Vector(self._io, self, self._root)
-                        self.u = self._io.read_u2be()
-                        self.v = self._io.read_u2be()
-
-
-
-            class TristripTypeInfo(KaitaiStruct):
-                def __init__(self, _io, _parent=None, _root=None):
-                    self._io = _io
-                    self._parent = _parent
-                    self._root = _root if _root else self
-                    self._read()
-
-                def _read(self):
-                    pass
-
-                @property
-                def tr_len_8(self):
-                    if hasattr(self, '_m_tr_len_8'):
-                        return self._m_tr_len_8
-
-                    io = self._root._io
-                    _pos = io.pos()
-                    io.seek((self._parent.off_data + 34))
-                    self._m_tr_len_8 = io.read_u2be()
-                    io.seek(_pos)
-                    return getattr(self, '_m_tr_len_8', None)
-
-                @property
-                def second_strip_command(self):
-                    if hasattr(self, '_m_second_strip_command'):
-                        return self._m_second_strip_command
-
-                    io = self._root._io
-                    _pos = io.pos()
-                    io.seek(((self._parent.off_data + 32) + ((self.tr_len_8 * 11) + 4)))
-                    self._m_second_strip_command = io.read_u2be()
-                    io.seek(_pos)
-                    return getattr(self, '_m_second_strip_command', None)
-
-                @property
-                def tristrip_length(self):
-                    if hasattr(self, '_m_tristrip_length'):
-                        return self._m_tristrip_length
-
-                    if  ((self.second_strip_command == 153) or ( ((self.second_strip_command == 0) and (self.tr_len_8 == self._parent.surface_data.num_vertices)) )) :
-                        self._m_tristrip_length = 11
-
-                    return getattr(self, '_m_tristrip_length', None)
-
-                @property
-                def tristrip_type(self):
-                    if hasattr(self, '_m_tristrip_type'):
-                        return self._m_tristrip_type
-
-                    if  ((self._parent._parent.off_v_format == 1065353216) or (self._parent._parent.off_v_format == 0)) :
-                        _pos = self._io.pos()
-                        self._io.seek(0)
-                        _on = self.tristrip_length
-                        if _on == 11:
-                            self._m_tristrip_type = self._io.read_u2be()
-                        elif _on == 9:
-                            self._m_tristrip_type = self._io.read_u4be()
-                        self._io.seek(_pos)
-
-                    return getattr(self, '_m_tristrip_type', None)
+                    self.strip_data = self._io.read_bytes(self.len_data)
 
 
             @property
@@ -287,41 +160,13 @@ class Gmf2(KaitaiStruct):
                 self._m_v_buf = []
                 for i in range(self.num_v):
                     _on = self.v_divisor
-                    if _on == -1:
+                    if _on == 4294967295:
                         self._m_v_buf.append(Gmf2.FlVectorBe(io, self, self._root))
                     else:
                         self._m_v_buf.append(Gmf2.ShortVector(io, self, self._root))
 
                 io.seek(_pos)
                 return getattr(self, '_m_v_buf', None)
-
-            @property
-            def tristrip_type_data(self):
-                if hasattr(self, '_m_tristrip_type_data'):
-                    return self._m_tristrip_type_data
-
-                io = self._root._io
-                self._m_tristrip_type_data = Gmf2.WorldObject.Surface.TristripTypeInfo(io, self, self._root)
-                return getattr(self, '_m_tristrip_type_data', None)
-
-            @property
-            def strips(self):
-                if hasattr(self, '_m_strips'):
-                    return self._m_strips
-
-                io = self._root._io
-                _pos = io.pos()
-                io.seek((self.off_data + 32))
-                self._m_strips = []
-                i = 0
-                while True:
-                    _ = Gmf2.WorldObject.Surface.Tristrip(io, self, self._root)
-                    self._m_strips.append(_)
-                    if _.command != 153:
-                        break
-                    i += 1
-                io.seek(_pos)
-                return getattr(self, '_m_strips', None)
 
 
         @property

@@ -279,10 +279,20 @@ types:
             type:
               switch-on: v_divisor
               cases:
-                0xFFFFFFFF: fl_vector_be
+                -1: fl_vector_be
                 _: short_vector
             repeat: expr
             repeat-expr: num_v
+          tristrip_type_data:
+            io: _root._io
+            type: tristrip_type_info
+          strips:
+            io: _root._io
+            pos: off_data + 32
+            type: tristrip
+            repeat: until
+            repeat-until: _.command != 0x99
+            
         types:
           surfdata:
             seq:
@@ -293,7 +303,76 @@ types:
               - id: unknown
                 type: u2be
               - contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-              
-              - id: strip_data
-                size: len_data
+          
+          tristrip:
+            seq:
+              - id: command
+                type: u2be
+              - id: num_v
+                type: u2be
+              - id: idx_data
+                type:
+                  switch-on: _parent.tristrip_type_data.tristrip_type
+                  cases:
+                    0x474D: index_11b_b
+                    0x474D4632: index_9b
+                    _: index_11b_a
+                repeat: expr
+                repeat-expr: num_v
+            types:
+              index_11b_a:
+                seq:
+                  - id: idx
+                    type: u2be
+                  - id: normal
+                    type: u1_vector
+                  - id: color
+                    type: u2be
+                  - id: u
+                    type: u2be
+                  - id: v
+                    type: u2be
+              index_11b_b:
+                seq:
+                  - id: unk_6
+                    type: u2be
+                  - id: idx
+                    type: u2be
+                  - id: normal
+                    type: u1_vector
+                  - id: u
+                    type: u2be
+                  - id: v
+                    type: u2be
+              index_9b:
+                seq:
+                  - id: idx
+                    type: u2be
+                  - id: normal
+                    type: u1_vector
+                  - id: u
+                    type: u2be
+                  - id: v
+                    type: u2be
+          tristrip_type_info:
+            instances:
+              tr_len_8:
+                io: _root._io
+                pos: _parent.off_data + 34
+                type: u2be
+              second_strip_command:
+                io: _root._io
+                pos: _parent.off_data + 32 + (tr_len_8 * 11 + 4)
+                type: u2be
+              tristrip_length:
+                value: 11
+                if: (second_strip_command == 153) or ((second_strip_command == 0) and (tr_len_8 == _parent.surface_data.num_vertices))
+              tristrip_type:
+                pos: 0
+                type:
+                  switch-on: tristrip_length
+                  cases:
+                    11: u2
+                    9: u4
+                if: _parent._parent.off_v_format == 0x3f800000 or _parent._parent.off_v_format == 0
                 

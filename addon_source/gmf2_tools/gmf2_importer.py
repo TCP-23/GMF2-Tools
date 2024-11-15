@@ -39,8 +39,8 @@ def sort_objects(objs):
 
         if world_object.off_parent in objs:
             parent = objs[world_object.off_parent]
-        if world_object.off_firstchild in objs:
-            first_child = objs[world_object.off_firstchild]
+        if world_object.off_first_child in objs:
+            first_child = objs[world_object.off_first_child]
         if world_object.off_prev in objs:
             prev_obj = objs[world_object.off_prev]
         if world_object.off_next in objs:
@@ -60,12 +60,12 @@ def sort_objects(objs):
 
 
 def get_tristrip_format(surface, num_idx):
-    surfbuf = surface.data.data
+    surfbuf = surface.surface_data.strip_data
 
     if surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 153 \
             or (surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 0
                 # and surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 4] != 0
-                and num_idx == surface.data.num_v_smthn_total):
+                and num_idx == surface.surface_data.num_vertices):
         return 1
     else:
         return 0
@@ -83,14 +83,14 @@ class GM2ModelImporter(Operator):
 
         gm2: Gmf2 = Gmf2.from_file(filepath)
 
-        if gm2.nmh2_identifier == 4294967295:
+        if gm2.game_identifier == 4294967295:
             TargetGame.gameId = GameTarget_Enum.NMH2
         else:
             TargetGame.gameId = GameTarget_Enum.NMH1
 
         unsorted_objects = {}
         for i, world_object in enumerate(gm2.world_objects):
-            unsorted_objects[world_object.off] = world_object
+            unsorted_objects[world_object.offset] = world_object
 
         objects, bones = sort_objects(unsorted_objects)
 
@@ -131,11 +131,11 @@ class GM2ModelImporter(Operator):
                 new_bone.parent = GM2ModelImporter.obj_list[bone.parent_obj]
 
     def get_mesh_strips(self, surf, processed_obj):
-        surfbuf = surf.data.data
+        surfbuf = surf.surface_data.strip_data
         mesh_strips = []
 
         head = 0
-        i_remaining = surf.data.num_v_smthn_total
+        i_remaining = surf.surface_data.num_vertices
 
         while i_remaining > 0:
             command = struct.unpack('>H', surfbuf[head:head + 2])[0]
@@ -150,7 +150,7 @@ class GM2ModelImporter(Operator):
                 case 0x99:
                     for _ in range(num_idx):
                         if (self.index_override == "OPT_D" or
-                                (self.index_override == "OPT_A" and processed_obj.obj.data_c != None)):
+                                (self.index_override == "OPT_A" and processed_obj.obj.v_format is not None)):
                             ibuf = surfbuf[head:head + 11]
                             head += 11
 

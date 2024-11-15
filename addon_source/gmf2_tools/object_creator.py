@@ -32,16 +32,16 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         #if TargetGame.gameId == GameTarget_Enum.NMH2:
             #position = tuple((objData.obj.origin.x * 0.1, objData.obj.origin.z * 0.1, -(objData.obj.origin.y * 0.1)))
         #else:
-        position = tuple((objData.obj.origin.x * 0.1, objData.obj.origin.y * 0.1, objData.obj.origin.z * 0.1))
+        position = tuple((objData.obj.position.x * 0.1, objData.obj.position.y * 0.1, objData.obj.position.z * 0.1))
         new_obj.location = position
 
         if (objData.parent_obj is None) and (self.up_axis != 'OPT_C'):
             if self.up_axis == 'OPT_A':
-                rotation = tuple((0, objData.obj.rot_y + math.radians(90), objData.obj.rot_z))
+                rotation = tuple((0, objData.obj.rotation.y + math.radians(90), objData.obj.rotation.z))
             else:
-                rotation = tuple((math.radians(90), objData.obj.rot_y, objData.obj.rot_z))
+                rotation = tuple((math.radians(90), objData.obj.rotation.y, objData.obj.rotation.z))
         else:
-            rotation = tuple((0, objData.obj.rot_y, objData.obj.rot_z))
+            rotation = tuple((0, objData.obj.rotation.y, objData.obj.rotation.z))
         new_obj.rotation_euler = rotation
 
         return new_obj
