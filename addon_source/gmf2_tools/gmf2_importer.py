@@ -113,11 +113,11 @@ class GM2ModelImporter(Operator):
                     GM2ObjectCreator.create_mesh_surface(self, new_obj.data,
                                                          GM2ObjectCreator.SurfData(verts, idxs, uvs, normals))
 
-                if len(GM2ObjectCreator.normals) > 0:
-                    GM2ObjectCreator.apply_normals(self, new_obj.data)
-
                 if self.smooth_shading:
                     new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
+
+                if len(GM2ObjectCreator.normals) > 0:
+                    GM2ObjectCreator.apply_normals(self, new_obj.data)
 
     def import_meshes(self, context, meshes):
         pass
