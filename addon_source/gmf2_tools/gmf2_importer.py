@@ -34,6 +34,8 @@ def sort_objects(objs):
     sorted_objs = []
     sorted_bones = []
 
+    bone_world_objects = []
+
     for i, world_object in objs.items():
         parent, first_child, prev_obj, next_obj = None, None, None, None
 
@@ -50,9 +52,11 @@ def sort_objects(objs):
         if processed_obj.obj.name == "ROOT" and processed_obj.obj.surfaces is None:
             processed_obj.isBone = True
             sorted_bones.append(processed_obj)
-        elif processed_obj.parent_obj in sorted_bones and processed_obj.obj.surfaces is None:  # make sure this can't throw error if no parent
+            bone_world_objects.append(processed_obj.obj)
+        elif processed_obj.parent_obj in bone_world_objects and processed_obj.obj.surfaces is None:
             processed_obj.isBone = True
             sorted_bones.append(processed_obj)
+            bone_world_objects.append(processed_obj.obj)
         else:
             sorted_objs.append(processed_obj)
 
