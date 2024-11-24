@@ -101,6 +101,8 @@ class GM2ModelImporter(Operator):
         GM2ModelImporter.import_bones(self, context, bones)
         GM2ModelImporter.import_objects(self, context, objects)
 
+        GM2ModelImporter.import_materials(self, context, gm2.materials)
+
     def import_objects(self, context, objects):
         for i, processed_obj in enumerate(objects):
             new_obj = GM2ObjectCreator.create_object(self, context, processed_obj, self.up_axis)
@@ -133,6 +135,10 @@ class GM2ModelImporter(Operator):
 
             if bone.parent_obj is not None:
                 new_bone.parent = GM2ModelImporter.obj_list[bone.parent_obj]
+
+    def import_materials(self, context, materials):
+        for i, mat in enumerate(materials):
+            new_mat = GM2ObjectCreator.create_material(self, mat)
 
     def get_mesh_strips(self, surf, processed_obj):
         surfbuf = surf.surface_data.strip_data

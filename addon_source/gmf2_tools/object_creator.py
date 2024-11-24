@@ -33,6 +33,11 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
             #position = tuple((objData.obj.origin.x * 0.1, objData.obj.origin.z * 0.1, -(objData.obj.origin.y * 0.1)))
         #else:
         position = tuple((objData.obj.position.x * 0.1, objData.obj.position.y * 0.1, objData.obj.position.z * 0.1))
+
+        # Flip NMH2 bones
+        if TargetGame.gameId == GameTarget_Enum.NMH2 and objData.obj.name != "ROOT" and objData.obj.name != "NAVEL" and objData.isBone:
+            position = tuple((objData.obj.position.x * 0.1, -objData.obj.position.z * 0.1, objData.obj.position.y * 0.1))
+
         new_obj.location = position
 
         if (objData.parent_obj is None) and (self.up_axis != 'OPT_C'):
@@ -51,6 +56,11 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
 
     def create_bone(self, boneData):
         pass
+
+    def create_material(self, matData):
+        mat = bpy.data.materials.new(matData.name)
+
+        return mat
 
     def create_mesh_vertices(self):
         pass
