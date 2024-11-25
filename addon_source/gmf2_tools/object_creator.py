@@ -58,12 +58,6 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
     def create_bone(self, boneData):
         pass
 
-    def create_material(self, matData):
-        mat = bpy.data.materials.new(matData.name)
-        mat.diffuse_color = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), 1)
-
-        return mat
-
     def create_mesh_vertices(self):
         pass
 

@@ -8,6 +8,7 @@ from .target_game import TargetGame
 
 from .gmf2 import Gmf2
 from .object_creator import GM2ObjectCreator
+from .gct0_handler import GCTTextureHandler
 
 Vec3 = namedtuple("Vec3", "x y z")
 Gm2Idx = namedtuple("Gm2Idx", "i u v n")
@@ -80,7 +81,6 @@ class GM2ModelImporter(Operator):
     bl_idname = "gm2_importer.model_data"
     bl_label = "Import GMF2 model"
 
-    mat_list = {}
     obj_list = {}
 
     def load_file_data(self, context, filepath):
@@ -99,7 +99,8 @@ class GM2ModelImporter(Operator):
 
         objects, bones = sort_objects(unsorted_objects)
 
-        GM2ModelImporter.import_materials(self, context, gm2.materials)
+        GCTTextureHandler.import_textures(self, context, gm2.textures)
+        GCTTextureHandler.import_materials(self, context, gm2.materials)
 
         GM2ModelImporter.import_bones(self, context, bones)
         GM2ModelImporter.import_objects(self, context, objects)
@@ -114,7 +115,7 @@ class GM2ModelImporter(Operator):
 
             if processed_obj.obj.surfaces is not None:
                 #new_mesh = GM2ObjectCreator.create_mesh(self, processed_obj)
-                GM2ObjectCreator.apply_materials(self, new_obj, processed_obj.obj, GM2ModelImporter.mat_list)
+                GM2ObjectCreator.apply_materials(self, new_obj, processed_obj.obj, GCTTextureHandler.mat_list)
 
                 for ii, surf in enumerate(processed_obj.obj.surfaces):
                     verts, idxs, uvs, normals = GM2ModelImporter.get_surface_data(self, processed_obj, surf, ii)
@@ -137,11 +138,6 @@ class GM2ModelImporter(Operator):
 
             if bone.parent_obj is not None:
                 new_bone.parent = GM2ModelImporter.obj_list[bone.parent_obj]
-
-    def import_materials(self, context, materials):
-        for i, mat in enumerate(materials):
-            new_mat = GM2ObjectCreator.create_material(self, mat)
-            GM2ModelImporter.mat_list[mat.offset] = new_mat
 
     def get_mesh_strips(self, surf, processed_obj):
         surfbuf = surf.surface_data.strip_data
