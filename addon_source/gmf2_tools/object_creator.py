@@ -5,10 +5,10 @@ from bpy.types import Operator
 from bpy_extras import object_utils
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 import math
+import random
 
 from .target_game import GameTarget_Enum
 from .target_game import TargetGame
-
 
 class GM2ObjectCreator(Operator, AddObjectHelper):
     """Creates object data from a GMF2 file"""
@@ -30,13 +30,14 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         # set rotation
 
         #if TargetGame.gameId == GameTarget_Enum.NMH2:
-            #position = tuple((objData.obj.origin.x * 0.1, objData.obj.origin.z * 0.1, -(objData.obj.origin.y * 0.1)))
+        #position = tuple((objData.obj.origin.x * 0.1, objData.obj.origin.z * 0.1, -(objData.obj.origin.y * 0.1)))
         #else:
         position = tuple((objData.obj.position.x * 0.1, objData.obj.position.y * 0.1, objData.obj.position.z * 0.1))
 
-        # Flip NMH2 bones
+        #Flip NMH2 bones
         if TargetGame.gameId == GameTarget_Enum.NMH2 and objData.obj.name != "ROOT" and objData.obj.name != "NAVEL" and objData.isBone:
-            position = tuple((objData.obj.position.x * 0.1, -objData.obj.position.z * 0.1, objData.obj.position.y * 0.1))
+            position = tuple(
+                (objData.obj.position.x * 0.1, -objData.obj.position.z * 0.1, objData.obj.position.y * 0.1))
 
         new_obj.location = position
 
@@ -59,13 +60,14 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
 
     def create_material(self, matData):
         mat = bpy.data.materials.new(matData.name)
+        mat.diffuse_color = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), 1)
 
         return mat
 
     def create_mesh_vertices(self):
         pass
 
-    def create_mesh_surface(self, mesh, sdata: SurfData):
+    def create_mesh_surface(self, mesh, sdata: SurfData, mat_index):
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
@@ -80,9 +82,10 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
 
         iteration = 0
         for idx_group in sdata.idxs:
-            if idx_group.count(idx_group[0]) == 1 and idx_group.count(idx_group[1]) == 1 and idx_group.count(idx_group[2]) == 1:
-                if not bm.faces.get([bm.verts[j-1] for j in idx_group]):
-                    face = bm.faces.new([bm.verts[j-1] for j in idx_group])
+            if idx_group.count(idx_group[0]) == 1 and idx_group.count(idx_group[1]) == 1 and idx_group.count(
+                    idx_group[2]) == 1:
+                if not bm.faces.get([bm.verts[j - 1] for j in idx_group]):
+                    face = bm.faces.new([bm.verts[j - 1] for j in idx_group])
                     for loop in face.loops:
                         vert = loop.vert
                         if GM2ObjectCreator.normals.get(vert.index) is None and vert.index >= 0:
@@ -91,6 +94,7 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
                         loop_uv = loop[uv_layer]
                         loop_uv.uv = sdata.uvs[iteration]
                         iteration += 1
+                    face.material_index = mesh["MatIdxs"][str(mat_index)]
 
         bm.to_mesh(mesh)
         bm.free()
@@ -107,3 +111,13 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
 
         mesh.normals_split_custom_set_from_vertices(normals)
         GM2ObjectCreator.normals = {}
+
+    def apply_materials(self, mesh, objData, mat_list):
+        mat_idx_chart = {}
+
+        for i, surf in enumerate(objData.surfaces):
+            if mat_list[surf.off_material].name not in mesh.data.materials:
+                mesh.data.materials.append(mat_list[surf.off_material])
+                mat_idx_chart[str(surf.off_material)] = len(mesh.data.materials) - 1
+
+        mesh.data["MatIdxs"] = mat_idx_chart

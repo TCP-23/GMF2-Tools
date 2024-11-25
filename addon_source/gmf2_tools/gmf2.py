@@ -7,6 +7,7 @@ from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
+from .gct0 import Gct0
 class Gmf2(KaitaiStruct):
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
@@ -61,7 +62,7 @@ class Gmf2(KaitaiStruct):
 
         self.materials = []
         for i in range(self.num_materials):
-            self.materials.append(Gmf2.Material(self._io, self, self._root))
+            self.materials.append(Gmf2.Material(self._io.pos(), self._io, self, self._root))
 
         self.world_objects = []
         for i in range(self.num_objects):
@@ -272,10 +273,11 @@ class Gmf2(KaitaiStruct):
 
 
     class Material(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
+        def __init__(self, offset, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
             self._root = _root if _root else self
+            self.offset = offset
             self._read()
 
         def _read(self):
@@ -336,16 +338,18 @@ class Gmf2(KaitaiStruct):
             self.unk_string = (KaitaiStream.bytes_terminate(self._io.read_bytes(4), 0, False)).decode(u"SHIFT-JIS")
 
         @property
-        def data(self):
-            if hasattr(self, '_m_data'):
-                return self._m_data
+        def gct0_texture(self):
+            if hasattr(self, '_m_gct0_texture'):
+                return self._m_gct0_texture
 
             io = self._root._io
             _pos = io.pos()
             io.seek(self.off_data)
-            self._m_data = io.read_bytes(self.len_data)
+            self._raw__m_gct0_texture = io.read_bytes(self.len_data)
+            _io__raw__m_gct0_texture = KaitaiStream(BytesIO(self._raw__m_gct0_texture))
+            self._m_gct0_texture = Gct0(_io__raw__m_gct0_texture)
             io.seek(_pos)
-            return getattr(self, '_m_data', None)
+            return getattr(self, '_m_gct0_texture', None)
 
 
     @property

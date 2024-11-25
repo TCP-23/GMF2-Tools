@@ -3,6 +3,7 @@ meta:
   file-extension: GM2
   encoding: SHIFT-JIS
   endian: be
+  imports: gct0
 
 instances:
   game_identifier:
@@ -55,7 +56,7 @@ seq:
     repeat-expr: num_textures
     
   - id: materials
-    type: material
+    type: material(_io.pos)
     repeat: expr
     repeat-expr: num_materials
     
@@ -137,14 +138,18 @@ types:
         size: 4
     
     instances:
-      data:
+      gct0_texture:
         io: _root._io
         pos: off_data
+        type: gct0
         size: len_data
   
   # --- Materials
   
   material:
+    params:
+      - id: offset
+        type: u4
     seq:
       - id: name
         type: strz

@@ -80,6 +80,7 @@ class GM2ModelImporter(Operator):
     bl_idname = "gm2_importer.model_data"
     bl_label = "Import GMF2 model"
 
+    mat_list = {}
     obj_list = {}
 
     def load_file_data(self, context, filepath):
@@ -98,10 +99,10 @@ class GM2ModelImporter(Operator):
 
         objects, bones = sort_objects(unsorted_objects)
 
+        GM2ModelImporter.import_materials(self, context, gm2.materials)
+
         GM2ModelImporter.import_bones(self, context, bones)
         GM2ModelImporter.import_objects(self, context, objects)
-
-        GM2ModelImporter.import_materials(self, context, gm2.materials)
 
     def import_objects(self, context, objects):
         for i, processed_obj in enumerate(objects):
@@ -113,11 +114,12 @@ class GM2ModelImporter(Operator):
 
             if processed_obj.obj.surfaces is not None:
                 #new_mesh = GM2ObjectCreator.create_mesh(self, processed_obj)
+                GM2ObjectCreator.apply_materials(self, new_obj, processed_obj.obj, GM2ModelImporter.mat_list)
 
                 for ii, surf in enumerate(processed_obj.obj.surfaces):
                     verts, idxs, uvs, normals = GM2ModelImporter.get_surface_data(self, processed_obj, surf, ii)
                     GM2ObjectCreator.create_mesh_surface(self, new_obj.data,
-                                                         GM2ObjectCreator.SurfData(verts, idxs, uvs, normals))
+                                                         GM2ObjectCreator.SurfData(verts, idxs, uvs, normals), surf.off_material)
 
                 if self.smooth_shading:
                     new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
@@ -139,6 +141,7 @@ class GM2ModelImporter(Operator):
     def import_materials(self, context, materials):
         for i, mat in enumerate(materials):
             new_mat = GM2ObjectCreator.create_material(self, mat)
+            GM2ModelImporter.mat_list[mat.offset] = new_mat
 
     def get_mesh_strips(self, surf, processed_obj):
         surfbuf = surf.surface_data.strip_data
