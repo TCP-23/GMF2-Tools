@@ -54,6 +54,12 @@ class ToolsSetup(Operator, ImportHelper):
         default=True
     )
 
+    import_mats: BoolProperty(
+        name="Import Materials & Textures",
+        description="",
+        default=True
+    )
+
     def start_plugin(self, context, filepath):
         GM2ModelImporter.load_file_data(self, context, filepath)
 

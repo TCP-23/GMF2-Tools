@@ -99,8 +99,9 @@ class GM2ModelImporter(Operator):
 
         objects, bones = sort_objects(unsorted_objects)
 
-        GCTTextureHandler.import_textures(self, context, gm2.textures)
-        GCTTextureHandler.import_materials(self, context, gm2.materials)
+        if self.import_mats:
+            GCTTextureHandler.import_textures(self, context, gm2.textures)
+            GCTTextureHandler.import_materials(self, context, gm2.materials)
 
         GM2ModelImporter.import_bones(self, context, bones)
         GM2ModelImporter.import_objects(self, context, objects)
@@ -115,12 +116,18 @@ class GM2ModelImporter(Operator):
 
             if processed_obj.obj.surfaces is not None:
                 #new_mesh = GM2ObjectCreator.create_mesh(self, processed_obj)
-                GM2ObjectCreator.apply_materials(self, new_obj, processed_obj.obj, GCTTextureHandler.mat_list)
+                if self.import_mats:
+                    GM2ObjectCreator.apply_materials(self, new_obj, processed_obj.obj, GCTTextureHandler.mat_list)
 
                 for ii, surf in enumerate(processed_obj.obj.surfaces):
                     verts, idxs, uvs, normals = GM2ModelImporter.get_surface_data(self, processed_obj, surf, ii)
-                    GM2ObjectCreator.create_mesh_surface(self, new_obj.data,
-                                                         GM2ObjectCreator.SurfData(verts, idxs, uvs, normals), surf.off_material)
+                    if self.import_mats:
+                        GM2ObjectCreator.create_mesh_surface(self, new_obj.data,
+                                                             GM2ObjectCreator.SurfData(verts, idxs, uvs, normals),
+                                                             surf.off_material)
+                    else:
+                        GM2ObjectCreator.create_mesh_surface(self, new_obj.data,
+                                                             GM2ObjectCreator.SurfData(verts, idxs, uvs, normals), -1)
 
                 if self.smooth_shading:
                     new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
@@ -236,7 +243,7 @@ class GM2ModelImporter(Operator):
             uvs.append(tuple((idx.u / pow(2, 10), -(idx.v / pow(2, 10)) + 1)))
 
         valid_idx_count = 0
-        for iii in range(len(mesh_strips)-2):
+        for iii in range(len(mesh_strips) - 2):
             valid_idx_count += 1
             if valid_idx_count >= 4:
                 valid_idx_count = 1

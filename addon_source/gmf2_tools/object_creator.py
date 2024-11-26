@@ -88,7 +88,9 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
                         loop_uv = loop[uv_layer]
                         loop_uv.uv = sdata.uvs[iteration]
                         iteration += 1
-                    face.material_index = mesh["MatIdxs"][str(mat_index)]
+
+                    if self.import_mats:
+                        face.material_index = mesh["MatIdxs"][str(mat_index)]
 
         bm.to_mesh(mesh)
         bm.free()
