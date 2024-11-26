@@ -51,7 +51,7 @@ class ToolsSetup(Operator, ImportHelper):
     smooth_shading: BoolProperty(
         name="Use Smooth Shading",
         description="Defaults the model to use 'smooth' shading instead of 'flat' shading. \nLeave this on in most cases",
-        default=True,
+        default=True
     )
 
     def start_plugin(self, context, filepath):

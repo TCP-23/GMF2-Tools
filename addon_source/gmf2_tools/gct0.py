@@ -38,20 +38,25 @@ class Gct0(KaitaiStruct):
         self.encoding = KaitaiStream.resolve_enum(Gct0.TextureEncoding, self._io.read_u2be())
         self.width = self._io.read_u2be()
         self.height = self._io.read_u2be()
-        self._unnamed5 = self._io.read_bytes(4)
-        if not self._unnamed5 == b"\x00\x00\x00\x00":
-            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed5, self._io, u"/seq/5")
-        self.unk_1 = self._io.read_u4be()
-        self._unnamed7 = self._io.read_bytes(12)
-        if not self._unnamed7 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
-            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed7, self._io, u"/seq/7")
-        self.unk_2 = self._io.read_u4be()
-        self._unnamed9 = self._io.read_bytes(12)
-        if not self._unnamed9 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
-            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed9, self._io, u"/seq/9")
-        self._unnamed10 = self._io.read_bytes(16)
-        if not self._unnamed10 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
-            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed10, self._io, u"/seq/10")
+        self.unk_1 = self._io.read_u1()
+        self._unnamed6 = self._io.read_bytes(3)
+        if not self._unnamed6 == b"\x00\x00\x00":
+            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00", self._unnamed6, self._io, u"/seq/6")
+        self.data_offset = self._io.read_u4be()
+        self._unnamed8 = self._io.read_bytes(8)
+        if not self._unnamed8 == b"\x00\x00\x00\x00\x00\x00\x00\x00":
+            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed8, self._io, u"/seq/8")
+        self.unk_2 = self._io.read_u2be()
+        self._unnamed10 = self._io.read_bytes(2)
+        if not self._unnamed10 == b"\x00\x00":
+            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00", self._unnamed10, self._io, u"/seq/10")
+        self.unk_3 = self._io.read_u4be()
+        self._unnamed12 = self._io.read_bytes(12)
+        if not self._unnamed12 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
+            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed12, self._io, u"/seq/12")
+        self._unnamed13 = self._io.read_bytes(16)
+        if not self._unnamed13 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
+            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed13, self._io, u"/seq/13")
         self.texture_data = self._io.read_bytes_full()
 
 

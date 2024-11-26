@@ -16,20 +16,25 @@ seq:
     type: u2be
   - id: height
     type: u2be
-  
-  - contents: [0, 0, 0, 0]
-  
   - id: unk_1
+    type: u1
+  
+  - contents: [0, 0, 0]
+  
+  - id: data_offset
     type: u4be
-  - contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  - contents: [0, 0, 0, 0, 0, 0, 0, 0]
   - id: unk_2
+    type: u2be
+  - contents: [0, 0]
+  - id: unk_3
+    doc: "Always 202?"
     type: u4be
   - contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   - contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   
   - id: texture_data
     size-eos: true
-    
 
 enums:
   texture_encoding:

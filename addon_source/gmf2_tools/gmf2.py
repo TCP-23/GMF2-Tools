@@ -58,7 +58,7 @@ class Gmf2(KaitaiStruct):
 
         self.textures = []
         for i in range(self.num_textures):
-            self.textures.append(Gmf2.Texture(self._io, self, self._root))
+            self.textures.append(Gmf2.Texture(self._io.pos(), self._io, self, self._root))
 
         self.materials = []
         for i in range(self.num_materials):
@@ -301,8 +301,8 @@ class Gmf2(KaitaiStruct):
                 self._unnamed0 = self._io.read_bytes(4)
                 if not self._unnamed0 == b"\x00\x00\x00\x00":
                     raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed0, self._io, u"/types/material/types/material_data/seq/0")
-                self.off_texture = self._io.read_u4le()
                 self.unk_3 = self._io.read_u4le()
+                self.off_texture = self._io.read_u4le()
                 self.unk_4 = self._io.read_u4le()
                 self.shaderparams_a = Gmf2.FlVector4Le(self._io, self, self._root)
                 self.shaderparams_tint = Gmf2.FlVector4Le(self._io, self, self._root)
@@ -322,10 +322,11 @@ class Gmf2(KaitaiStruct):
 
 
     class Texture(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
+        def __init__(self, offset, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
             self._root = _root if _root else self
+            self.offset = offset
             self._read()
 
         def _read(self):
