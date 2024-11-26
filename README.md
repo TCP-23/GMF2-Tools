@@ -26,14 +26,14 @@ Games that are currently supported by the extension are:
 Other games that use the GMF2 model format might have support added in the future.
 
 ## Known Issues
-- ~~UVs in all models import flipped the wrong way~~ (fixed as of 0.5.0)
-- ~~Normals import incorrectly when using smooth shading~~ (fixed as of 0.5.1)
 - Normals will occasionally fail to import on map models
 - Objects from NMH2 will not import armature positions correctly
 - Meshes parented to armature bones don't appear in the correct position
 - Some objects import with a slightly incorrect position (e.x. the Tsubaki MKIII)
 - Some models will fail to import due to the program reading an incorrect number of tristrips
 - Models have a different order in the hierarchy than they should
+- Unknown error causing some models to not import (e.x. the Jacob's Ladder)
+- Some map models have an unknown position/rotation error
 
 ## Feature Checklist
 - ~~Vertices~~
