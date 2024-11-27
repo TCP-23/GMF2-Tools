@@ -5,12 +5,17 @@ from bpy.types import Operator
 
 class GCTTextureHandler(Operator):
 
+    #EMPTY_TEXTURE = r"b'\x90\xc4\x88\xe1\xaf\xaf\xff\xff[9] : --- No File ---\x00\x00\x00'"
+
     tex_list = {}
     mat_list = {}
 
     def import_textures(self, context, textures):
         for i, tex in enumerate(textures):
-            new_btex = GCTTextureHandler.create_texture(self, tex)
+            if "No File" not in str(tex.gct0_texture.texture_data):
+                new_btex = GCTTextureHandler.create_texture(self, tex)
+            else:
+                new_btex = GCTTextureHandler.get_fallback_texture(self)
             GCTTextureHandler.tex_list[tex.offset] = new_btex
 
     def import_materials(self, context, materials):
@@ -20,6 +25,22 @@ class GCTTextureHandler(Operator):
 
     def export_textures(self, context):
         pass
+
+    def get_fallback_texture(self):
+        if not bpy.data.textures.get("FALLBACK_TEX"):
+            bimg = bpy.data.images.new("FALLBACK_TEX", 1, 1)
+            pixels = []
+            pixels.append([1, 1, 1, 1])
+
+            pixels = [channel for pix in pixels for channel in pix]
+            bimg.pixels = pixels
+
+            btex = bpy.data.textures.new("FALLBACK_TEX", type='IMAGE')
+            btex.image = bimg
+        else:
+            btex = bpy.data.textures.get("FALLBACK_TEX")
+
+        return btex
 
     def create_texture(self, tex_data):
         img_size = tex_data.gct0_texture.width, tex_data.gct0_texture.height
