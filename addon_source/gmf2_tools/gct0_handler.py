@@ -1,6 +1,5 @@
 import bpy
 import struct
-import random
 from bpy.types import Operator
 from .gct0 import Gct0
 
@@ -11,7 +10,7 @@ def rgb565_to_RGB(colorData):
     b = colorData & 31  # Extract 5 bits for blue
 
     # Convert to 8-bit RGB (scale 5 bits to 8 bits)
-    rgb_data = tuple((int(r * 255 / 31), int(g * 255 / 63), int(b * 255 / 31)))
+    rgb_data = tuple((int(r * 255 / 31), int(g * 255 / 63), int(b * 255 / 31), 255))
 
     return rgb_data
 
@@ -63,30 +62,89 @@ def decompress_dxt1_texture(tex_data):
             pixel_list.append(pix[2] / 255)
             pixel_list.append(1.0)
 
-    """pixel_list = []
-    for i, block in enumerate(decompressed_data):
-        random_block_col_r = random.random()
-        random_block_col_g = random.random()
-        random_block_col_b = random.random()
-        for j, pix in enumerate(block):
-            pixel_list.append(random_block_col_r)
-            pixel_list.append(random_block_col_g)
-            pixel_list.append(random_block_col_b)
-            pixel_list.append(1.0)"""
-
     return pixel_list
 
 
-def decompress_cmpr_sub_block():
-    pass
+def decompress_cmpr_texture(tex_data):
+    # constants for block dimensions (8x8 blocks, each containing 4x4 sub-blocks)
+    BLOCK_W = 8
+    BLOCK_H = 8
+    SUBBLOCK_W = 4
+    SUBBLOCK_H = 4
+
+    # get texture width and texture height
+    tex_width, tex_height = tex_data.gct0_texture.width, tex_data.gct0_texture.height
+
+    # create a list to store decompressed texture data (RGBA format)
+    decompressed_data = [0] * tex_width * tex_height * 4
+
+    # pointer to the current position in the texture data
+    head = 0
+
+    # iterate over the texture in 8x8 blocks
+    for y in range(0, tex_height, BLOCK_H):
+        for x in range(0, tex_width, BLOCK_W):
+
+            # iterate of the 4x4 sub-blocks within each 8x8 block
+            for sub_y in range(0, BLOCK_H, SUBBLOCK_H):
+                for sub_x in range(0, BLOCK_W, SUBBLOCK_W):
+
+                    # read the two color values (565 format) from the texture data
+                    color0_565, color1_565 = struct.unpack('>HH', tex_data.gct0_texture.texture_data[head:head+4])
+                    head += 4
+
+                    # convert the 565 color values to RGB format
+                    color0_rgb = rgb565_to_RGB(color0_565)
+                    color1_rgb = rgb565_to_RGB(color1_565)
+
+                    # initialize default values for the other two colors
+                    color2_rgb = [0, 0, 0, 0]
+                    color3_rgb = [0, 0, 0, 0]
+
+                    # determine the third and fourth colors based on the first two colors
+                    if color0_565 > color1_565:
+                        for i in range(4):
+                            color2_rgb[i] = int((2 * color0_rgb[i] + color1_rgb[i]) / 3)
+                            color3_rgb[i] = int((2 * color1_rgb[i] + color0_rgb[i]) / 3)
+                    else:
+                        for i in range(4):
+                            color2_rgb[i] = int((color0_rgb[i] + color1_rgb[i]) / 2)
+                        color3_rgb = [0, 0, 0, 0]
+
+                    # create a color map for the four possible colors
+                    color_map = [color0_rgb, color1_rgb, color2_rgb, color3_rgb]
+
+                    # process each 4x4 sub-block (each block contains 4x4 pixels)
+                    for sub_y_offset in range(SUBBLOCK_H):
+                        # read the 1-byte pattern that defines pixel colors
+                        color_pattern = tex_data.gct0_texture.texture_data[head]
+                        head += 1
+
+                        # iterate over the 4x4 pixel positions in the sub-block
+                        for sub_x_offset in range(SUBBLOCK_W):
+                            # calculate the pixel position in the decompressed data
+                            pixel_y = y + sub_y + sub_y_offset
+                            pixel_x = x + sub_x + sub_x_offset
+
+                            # only write to decompressed data if the pixel is within bounds
+                            if pixel_y < tex_height and pixel_x < tex_width:
+                                # find the index in the decompressed data array
+                                index = (pixel_y * tex_width + pixel_x) * 4
+
+                                # use the color map based on the 2-bit index from the pattern
+                                decompressed_data[index:index+4] = color_map[(color_pattern >> (6 - (sub_x_offset * 2))) & 3]
+
+    return decompressed_data
 
 
-def decompress_cmpr_block():
-    pass
+def load_cmpr_texture(tex_data):
+    pixel_list = []
 
+    texture_data = decompress_cmpr_texture(tex_data)
+    for pix in texture_data:
+        pixel_list.append(pix / 255)
 
-def decompress_cmpr_texture():
-    pass
+    return pixel_list
 
 
 class GCTTextureHandler(Operator):
@@ -118,7 +176,6 @@ class GCTTextureHandler(Operator):
             pixels.append([0, 0, 0, 1])
 
             pixels = [channel for pix in pixels for channel in pix]
-            print(type(pixels))
             bimg.pixels = pixels
 
             btex = bpy.data.textures.new("FALLBACK_TEX", type='IMAGE')
@@ -141,13 +198,11 @@ class GCTTextureHandler(Operator):
                 pixels = [[0, 0, 0, 0]] * img_size[0] * img_size[1]
                 pass
             case Gct0.TextureEncoding.cmpr:
-                # pixels = decompress_dxt1_texture(tex_data)
-                pixels = decompress_cmpr_texture(tex_data)
+                pixels = load_cmpr_texture(tex_data)
             case _:
                 print("Texture format not supported (yet)")
                 pass
 
-        print(pixels[0])
         bimg.pixels = pixels
 
         btex = bpy.data.textures.new(tex_data.name, type='IMAGE')
