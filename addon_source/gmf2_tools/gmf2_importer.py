@@ -21,8 +21,6 @@ class ProcessedObject:
     prev_obj = None
     next_obj = None
 
-    isBone = False
-
     def __init__(self, _obj, _parent_obj, _first_child_obj, _prev_obj, _next_obj):
         self.obj = _obj
         self.parent_obj = _parent_obj
@@ -51,14 +49,15 @@ def sort_objects(objs):
 
         processed_obj = ProcessedObject(world_object, parent, first_child, prev_obj, next_obj)
         if processed_obj.obj.name == "ROOT" and processed_obj.obj.surfaces is None:
-            processed_obj.isBone = True
+            processed_obj.obj.isBone = True
             sorted_bones.append(processed_obj)
             bone_world_objects.append(processed_obj.obj)
         elif processed_obj.parent_obj in bone_world_objects and processed_obj.obj.surfaces is None:
-            processed_obj.isBone = True
+            processed_obj.obj.isBone = True
             sorted_bones.append(processed_obj)
             bone_world_objects.append(processed_obj.obj)
         else:
+            processed_obj.obj.isBone = False
             sorted_objs.append(processed_obj)
 
     return sorted_objs, sorted_bones

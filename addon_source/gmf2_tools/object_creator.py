@@ -10,6 +10,7 @@ import random
 from .target_game import GameTarget_Enum
 from .target_game import TargetGame
 
+
 class GM2ObjectCreator(Operator, AddObjectHelper):
     """Creates object data from a GMF2 file"""
     bl_idname = "gm2_importer.object_creation"
@@ -20,24 +21,12 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
     normals = {}
 
     def create_object(self, context, objData, upAxis):
-        #new_obj = bpy.ops.object.empty_add()
-        #new_obj.name = objData.obj.name
+        print(f"{objData.obj.name}.isBone == {objData.obj.isBone}")
 
         obj_mesh = bpy.data.meshes.new(objData.obj.name)
         new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
 
-        # set position
-        # set rotation
-
-        #if TargetGame.gameId == GameTarget_Enum.NMH2:
-        #position = tuple((objData.obj.origin.x * 0.1, objData.obj.origin.z * 0.1, -(objData.obj.origin.y * 0.1)))
-        #else:
         position = tuple((objData.obj.position.x * 0.1, objData.obj.position.y * 0.1, objData.obj.position.z * 0.1))
-
-        #Flip NMH2 bones
-        if TargetGame.gameId == GameTarget_Enum.NMH2 and objData.obj.name != "ROOT" and objData.obj.name != "NAVEL" and objData.isBone:
-            position = tuple(
-                (objData.obj.position.x * 0.1, -objData.obj.position.z * 0.1, objData.obj.position.y * 0.1))
 
         new_obj.location = position
 
@@ -47,7 +36,14 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
             else:
                 rotation = tuple((math.radians(90), objData.obj.rotation.y, objData.obj.rotation.z))
         else:
-            rotation = tuple((0, objData.obj.rotation.y, objData.obj.rotation.z))
+            if TargetGame.gameId == GameTarget_Enum.NMH2 and objData.obj.isBone is False:
+                if not objData.parent_obj.isBone:
+                    rotation = tuple((0, objData.obj.rotation.y, objData.obj.rotation.z))
+                else:
+                    rotation = tuple((objData.obj.rotation.x, objData.obj.rotation.y, objData.obj.rotation.z))
+            else:
+                rotation = tuple((objData.obj.rotation.x, objData.obj.rotation.y, objData.obj.rotation.z))
+
         new_obj.rotation_euler = rotation
 
         return new_obj
