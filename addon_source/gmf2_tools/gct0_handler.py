@@ -65,6 +65,18 @@ def decompress_dxt1_texture(tex_data):
     return pixel_list
 
 
+def decompress_cmpr_block(compressed_block):
+    pass
+
+
+def decompress_cmpr_subblock(compressed_subblock):
+    pass
+
+
+def get_cmpr_color_map():
+    pass
+
+
 def decompress_cmpr_texture(tex_data):
     # constants for block dimensions (8x8 blocks, each containing 4x4 sub-blocks)
     BLOCK_W = 8
@@ -75,7 +87,6 @@ def decompress_cmpr_texture(tex_data):
     # get texture width and texture height
     tex_width, tex_height = tex_data.gct0_texture.width, tex_data.gct0_texture.height
 
-    # create a list to store decompressed texture data (RGBA format)
     decompressed_data = [0] * tex_width * tex_height * 4
 
     # pointer to the current position in the texture data
@@ -85,7 +96,7 @@ def decompress_cmpr_texture(tex_data):
     for y in range(0, tex_height, BLOCK_H):
         for x in range(0, tex_width, BLOCK_W):
 
-            # iterate of the 4x4 sub-blocks within each 8x8 block
+            # iterate over the 4x4 sub-blocks within each 8x8 block
             for sub_y in range(0, BLOCK_H, SUBBLOCK_H):
                 for sub_x in range(0, BLOCK_W, SUBBLOCK_W):
 
@@ -133,6 +144,18 @@ def decompress_cmpr_texture(tex_data):
 
                                 # use the color map based on the 2-bit index from the pattern
                                 decompressed_data[index:index+4] = color_map[(color_pattern >> (6 - (sub_x_offset * 2))) & 3]
+
+    # flip the texture vertically
+    # iterate over the rows and reverse their pixel data
+    for y in range(tex_height // 2):
+        for x in range(tex_width):
+            # calculate the index for the current pixel and its vertically flipped counterpart
+            index_top = (y * tex_width + x) * 4
+            index_bottom = ((tex_height - y - 1) * tex_width + x) * 4
+
+            # swap the pixels
+            decompressed_data[index_top:index_top+4], decompressed_data[index_bottom:index_bottom+4] = \
+                decompressed_data[index_bottom:index_bottom+4], decompressed_data[index_top:index_top+4]
 
     return decompressed_data
 
@@ -214,6 +237,7 @@ class GCTTextureHandler(Operator):
         mat = bpy.data.materials.new(matData.name)
         #mat.diffuse_color = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), 1)
         mat.use_nodes = True
+        mat.node_tree.nodes["Principled BSDF"].inputs['Roughness'].default_value = 1
         if texture is not None:
             node_tex = mat.node_tree.nodes.new('ShaderNodeTexImage')
             node_tex.image = texture.image
