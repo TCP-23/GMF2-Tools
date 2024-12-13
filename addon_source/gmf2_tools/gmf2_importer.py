@@ -102,8 +102,9 @@ class GM2ModelImporter(Operator):
             GCTTextureHandler.import_textures(self, context, gm2.textures)
             GCTTextureHandler.import_materials(self, context, gm2.materials)
 
-        GM2ModelImporter.import_bones(self, context, bones)
-        GM2ModelImporter.import_objects(self, context, objects)
+        if self.import_models:
+            GM2ModelImporter.import_bones(self, context, bones)
+            GM2ModelImporter.import_objects(self, context, objects)
 
     def import_objects(self, context, objects):
         for i, processed_obj in enumerate(objects):

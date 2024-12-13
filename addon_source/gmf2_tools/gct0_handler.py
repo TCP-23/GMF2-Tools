@@ -3,6 +3,9 @@ import struct
 from bpy.types import Operator
 from .gct0 import Gct0
 
+CMPR_BLOCK_SIZE = 8
+CMPR_SUBBLOCK_SIZE = 4
+
 
 def rgb565_to_RGB(colorData):
     r = (colorData >> 11) & 31  # Extract 5 bits for red
@@ -63,18 +66,6 @@ def decompress_dxt1_texture(tex_data):
             pixel_list.append(1.0)
 
     return pixel_list
-
-
-def decompress_cmpr_block(compressed_block):
-    pass
-
-
-def decompress_cmpr_subblock(compressed_subblock):
-    pass
-
-
-def get_cmpr_color_map():
-    pass
 
 
 def decompress_cmpr_texture(tex_data):
@@ -160,6 +151,67 @@ def decompress_cmpr_texture(tex_data):
     return decompressed_data
 
 
+def decompress_cmpr_block(compressed_block):
+    decompressed_block = []
+
+    head = 0
+    for subblock in range(0, CMPR_BLOCK_SIZE * CMPR_BLOCK_SIZE, CMPR_SUBBLOCK_SIZE * CMPR_SUBBLOCK_SIZE):
+        compressed_subblock = compressed_block[head:head+8]
+        decompressed_subblock = decompress_cmpr_subblock(compressed_subblock)
+        decompressed_block.append(decompressed_subblock)
+        head += 8
+
+    return decompressed_block
+
+
+def decompress_cmpr_subblock(compressed_subblock):
+    decompressed_subblock = []
+
+    color0_565, color1_565 = struct.unpack('>HH', compressed_subblock[0:4])
+    color_map = [rgb565_to_RGB(color0_565), rgb565_to_RGB(color1_565), [0, 0, 0, 0], [0, 0, 0, 0]]
+
+    if color0_565 > color1_565:
+        for i in range(4):
+            color_map[2][i] = int((2 * color_map[0][i] + color_map[1][i]) / 3)
+            color_map[3][i] = int((2 * color_map[1][i] + color_map[0][i]) / 3)
+    else:
+        for i in range(4):
+            color_map[2][i] = int((color_map[0][i] + color_map[1][i]) / 2)
+
+    head = 0
+    for pixel_column in range(0, CMPR_SUBBLOCK_SIZE):
+        color_pattern = compressed_subblock[pixel_column]
+
+        for pixel_row in range(0, CMPR_SUBBLOCK_SIZE):
+            decompressed_subblock[head:head+4] = color_map[(color_pattern >> (6 - (pixel_row * 2))) & 3]
+            head += 4
+
+    return decompressed_subblock
+
+
+"""def decompress_cmpr_texture(tex_data):
+    tex_width, tex_height = tex_data.gct0_texture.width, tex_data.gct0_texture.height
+    decompressed_texture = [0] * tex_width * tex_height * 4
+    decompressed_blocks = []
+
+    head = 0
+    for block in range(0, tex_height * tex_width, CMPR_BLOCK_SIZE * CMPR_BLOCK_SIZE):
+        compressed_block = tex_data.gct0_texture.texture_data[head:head+32]
+        decompressed_block = decompress_cmpr_block(compressed_block)
+        decompressed_blocks.append(decompressed_block)
+        head += 32
+
+    for y in range(tex_height // 2):
+        for x in range(tex_width):
+            index_top = (y * tex_width + x) * 4
+            index_bottom = ((tex_height - y - 1) * tex_width + x) * 4
+
+            decompressed_texture[index_top:index_top+4], decompressed_texture[index_bottom:index_bottom+4] = \
+                decompressed_texture[index_bottom:index_bottom+4], decompressed_texture[index_top:index_top+4]
+
+    return decompressed_texture"""
+
+
 def load_cmpr_texture(tex_data):
     pixel_list = []
 
@@ -186,7 +238,10 @@ class GCTTextureHandler(Operator):
 
     def import_materials(self, context, materials):
         for i, mat in enumerate(materials):
-            new_mat = GCTTextureHandler.create_material(self, mat, GCTTextureHandler.tex_list[mat.data.off_texture])
+            if mat.data.off_texture != 0:
+                new_mat = GCTTextureHandler.create_material(self, mat, GCTTextureHandler.tex_list[mat.data.off_texture])
+            else:
+                new_mat = GCTTextureHandler.create_material(self, mat, GCTTextureHandler.get_fallback_texture(self))
             GCTTextureHandler.mat_list[mat.offset] = new_mat
 
     def export_textures(self, context):

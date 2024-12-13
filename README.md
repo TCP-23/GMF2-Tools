@@ -27,8 +27,8 @@ Other games that use the GMF2 model format might have support added in the futur
 
 ## Known Issues
 - Normals will occasionally fail to import on map models
-- Objects from NMH2 will not import armature positions correctly
-- Meshes parented to armature bones don't appear in the correct position
+- ~~Objects from NMH2 will not import armature positions correctly~~ (Fixed in upcoming release)
+- ~~Meshes parented to armature bones don't appear in the correct position~~ (Fixed in upcoming release)
 - Some objects import with a slightly incorrect position (e.x. the Tsubaki MKIII)
 - Some models will fail to import due to the program reading an incorrect number of tristrips
 - Models have a different order in the hierarchy than they should

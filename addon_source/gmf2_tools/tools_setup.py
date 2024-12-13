@@ -54,6 +54,12 @@ class ToolsSetup(Operator, ImportHelper):
         default=True
     )
 
+    import_models: BoolProperty(
+        name="Import Models & Armatures",
+        description="",
+        default=True
+    )
+
     import_mats: BoolProperty(
         name="Import Materials & Textures",
         description="",
