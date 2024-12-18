@@ -3,8 +3,8 @@
 import bpy
 
 from .tools_setup import ToolsSetup
-from .gmf2_importer import GM2ModelImporter
-from .object_creator import GM2ObjectCreator
+from .gct0_handler import ExternalSuccessPopup
+from .gct0_handler import ExternalTexturePopup
 
 
 def menu_func_import(self, context):
@@ -13,9 +13,13 @@ def menu_func_import(self, context):
 
 def register():
     bpy.utils.register_class(ToolsSetup)
+    bpy.utils.register_class(ExternalSuccessPopup)
+    bpy.utils.register_class(ExternalTexturePopup)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 
 def unregister():
     bpy.utils.unregister_class(ToolsSetup)
+    bpy.utils.unregister_class(ExternalSuccessPopup)
+    bpy.utils.unregister_class(ExternalTexturePopup)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)

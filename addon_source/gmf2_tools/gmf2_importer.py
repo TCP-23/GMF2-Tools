@@ -146,6 +146,12 @@ class GM2ModelImporter(Operator):
             if bone.parent_obj is not None:
                 new_bone.parent = GM2ModelImporter.obj_list[bone.parent_obj]
 
+        for key, bone in GM2ModelImporter.obj_list.items():
+            if key.isBone:
+                pass
+                #GM2ObjectCreator.create_bone(self, context, bone)
+
+
     def get_mesh_strips(self, surf, processed_obj):
         surfbuf = surf.surface_data.strip_data
         mesh_strips = []

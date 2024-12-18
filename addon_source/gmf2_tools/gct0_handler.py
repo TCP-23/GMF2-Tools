@@ -68,7 +68,7 @@ def decompress_dxt1_texture(tex_data):
     return pixel_list
 
 
-def decompress_cmpr_texture(tex_data):
+def decompress_cmpr_texture(gct0_data):
     # constants for block dimensions (8x8 blocks, each containing 4x4 sub-blocks)
     BLOCK_W = 8
     BLOCK_H = 8
@@ -76,7 +76,7 @@ def decompress_cmpr_texture(tex_data):
     SUBBLOCK_H = 4
 
     # get texture width and texture height
-    tex_width, tex_height = tex_data.gct0_texture.width, tex_data.gct0_texture.height
+    tex_width, tex_height = gct0_data.width, gct0_data.height
 
     decompressed_data = [0] * tex_width * tex_height * 4
 
@@ -92,7 +92,7 @@ def decompress_cmpr_texture(tex_data):
                 for sub_x in range(0, BLOCK_W, SUBBLOCK_W):
 
                     # read the two color values (565 format) from the texture data
-                    color0_565, color1_565 = struct.unpack('>HH', tex_data.gct0_texture.texture_data[head:head+4])
+                    color0_565, color1_565 = struct.unpack('>HH', gct0_data.texture_data[head:head+4])
                     head += 4
 
                     # convert the 565 color values to RGB format
@@ -119,7 +119,7 @@ def decompress_cmpr_texture(tex_data):
                     # process each 4x4 sub-block (each block contains 4x4 pixels)
                     for sub_y_offset in range(SUBBLOCK_H):
                         # read the 1-byte pattern that defines pixel colors
-                        color_pattern = tex_data.gct0_texture.texture_data[head]
+                        color_pattern = gct0_data.texture_data[head]
                         head += 1
 
                         # iterate over the 4x4 pixel positions in the sub-block
@@ -212,10 +212,10 @@ def decompress_cmpr_subblock(compressed_subblock):
     return decompressed_texture"""
 
 
-def load_cmpr_texture(tex_data):
+def load_cmpr_texture(gct0_data):
     pixel_list = []
 
-    texture_data = decompress_cmpr_texture(tex_data)
+    texture_data = decompress_cmpr_texture(gct0_data)
     for pix in texture_data:
         pixel_list.append(pix / 255)
 
@@ -230,10 +230,18 @@ class GCTTextureHandler(Operator):
 
     def import_textures(self, context, textures):
         for i, tex in enumerate(textures):
-            if "No File" not in str(tex.gct0_texture.texture_data) and tex.gct0_texture.encoding == Gct0.TextureEncoding.cmpr:
-                new_btex = GCTTextureHandler.create_texture(self, tex)
-            else:
+            new_btex = None
+            if tex.gct0_texture.encoding == Gct0.TextureEncoding.cmpr:
+                if "No File" not in str(tex.gct0_texture.texture_data):
+                    new_btex = GCTTextureHandler.create_internal_texture(self, tex)
+                else:
+                    new_btex = GCTTextureHandler.create_empty_texture(self, tex.name)
+                    ExternalTexturePopup.tex_info = tex
+                    bpy.ops.gcto_handler.exttex('INVOKE_DEFAULT')
+
+            if new_btex is None:
                 new_btex = GCTTextureHandler.get_fallback_texture(self)
+
             GCTTextureHandler.tex_list[tex.offset] = new_btex
 
     def import_materials(self, context, materials):
@@ -247,23 +255,41 @@ class GCTTextureHandler(Operator):
     def export_textures(self, context):
         pass
 
+    def create_empty_texture(self, tex_name):
+        default_color_1 = [0.945, 0.851, 0.753, 1]
+        default_color_2 = [0.356, 0.159, 0.102, 1]
+        color_picker = False
+
+        bimg = bpy.data.images.new(tex_name, 32, 32)
+        pixels = []
+        for i in range(0, 32):
+            if color_picker is False:
+                for j in range(0, 16):
+                    pixels.append(default_color_1)
+                    pixels.append(default_color_2)
+            else:
+                for j in range(0, 16):
+                    pixels.append(default_color_2)
+                    pixels.append(default_color_1)
+            color_picker = not color_picker
+
+        pixels = [channel for pix in pixels for channel in pix]
+        bimg.pixels = pixels
+
+        btex = bpy.data.textures.new(tex_name, type='IMAGE')
+        btex.image = bimg
+
+        return btex
+
     def get_fallback_texture(self):
         if not bpy.data.textures.get("FALLBACK_TEX"):
-            bimg = bpy.data.images.new("FALLBACK_TEX", 1, 1)
-            pixels = []
-            pixels.append([0, 0, 0, 1])
-
-            pixels = [channel for pix in pixels for channel in pix]
-            bimg.pixels = pixels
-
-            btex = bpy.data.textures.new("FALLBACK_TEX", type='IMAGE')
-            btex.image = bimg
+            btex = GCTTextureHandler.create_empty_texture(self, "FALLBACK_TEX")
         else:
             btex = bpy.data.textures.get("FALLBACK_TEX")
 
         return btex
 
-    def create_texture(self, tex_data):
+    def create_internal_texture(self, tex_data):
         img_size = tex_data.gct0_texture.width, tex_data.gct0_texture.height
         bimg = bpy.data.images.new(tex_data.name, width=img_size[0], height=img_size[1])
         pixels = []
@@ -276,7 +302,7 @@ class GCTTextureHandler(Operator):
                 pixels = [[0, 0, 0, 0]] * img_size[0] * img_size[1]
                 pass
             case Gct0.TextureEncoding.cmpr:
-                pixels = load_cmpr_texture(tex_data)
+                pixels = load_cmpr_texture(tex_data.gct0_texture)
             case _:
                 print("Texture format not supported (yet)")
                 pass
@@ -284,6 +310,32 @@ class GCTTextureHandler(Operator):
         bimg.pixels = pixels
 
         btex = bpy.data.textures.new(tex_data.name, type='IMAGE')
+        btex.image = bimg
+
+        return btex
+
+    def create_texture_from_external(self,  tex_data, gct0_data):
+        img_size = gct0_data.width, gct0_data.height
+        bimg = bpy.data.images.get(tex_data.name)
+        bimg.scale(img_size[0], img_size[1])
+
+        pixels = []
+
+        match gct0_data.encoding:
+            case Gct0.TextureEncoding.rgb5a3:
+                pixels = [[0, 0, 0, 0]] * img_size[0] * img_size[1]
+                pass
+            case Gct0.TextureEncoding.rgb5a3:
+                pixels = [[0, 0, 0, 0]] * img_size[0] * img_size[1]
+                pass
+            case Gct0.TextureEncoding.cmpr:
+                pixels = load_cmpr_texture(gct0_data)
+            case _:
+                print("Texture format not supported (yet)")
+                pass
+
+        bimg.pixels = pixels
+        btex = bpy.data.textures.get(tex_data.name)
         btex.image = bimg
 
         return btex
@@ -300,3 +352,63 @@ class GCTTextureHandler(Operator):
             mat.node_tree.links.new(node_tex.outputs[0], mat.node_tree.nodes[0].inputs["Base Color"])
 
         return mat
+
+
+class ExternalTexturePopup(Operator):
+    """popup for external textures"""
+    bl_label = "External Texture"
+    bl_idname = "gcto_handler.exttex"
+
+    tex_info = None
+
+    tex_path: bpy.props.StringProperty(
+        name="Path to texture",
+        description="",
+        subtype='FILE_PATH'
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.ui_units_x = 25
+
+        text_string_1 = "Texture " + "TEXTURE_NAME" + " is not contained in the model file."
+        text_string_2 = "Please provide the texture file. You can also press cancel to use a default texture."
+        text_string_3 = "Supported formats are: .BIN (GCT0), .GCT (GCT0)"
+        row = layout.row()
+        row.label(text=text_string_1)
+        row = layout.row()
+        row.label(text=text_string_2)
+        row = layout.row()
+        row.label(text=text_string_3)
+
+        row = layout.row()
+        row.prop(self, "tex_path")
+        row = layout.row()
+
+        row.template_popup_confirm("gcto_texture.nullpop", text="Import", cancel_text="Use Default")
+        #row.template_popup_confirm("gcto_texture.sucpopup", text="Import", cancel_text="Use Default")
+
+    def execute(self, context):
+        print(self.tex_path)
+
+        gct0: Gct0 = Gct0.from_file(self.tex_path)
+        GCTTextureHandler.create_texture_from_external(self, self.tex_info, gct0)
+        self.tex_info = None
+
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+
+class ExternalSuccessPopup(Operator):
+    """unused"""
+    bl_label = "Texture Imported"
+    bl_idname = "gcto_texture.sucpopup"
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
