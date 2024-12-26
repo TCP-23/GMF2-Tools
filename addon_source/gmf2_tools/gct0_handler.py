@@ -236,8 +236,6 @@ class GCTTextureHandler(Operator):
                     new_btex = GCTTextureHandler.create_internal_texture(self, tex)
                 else:
                     new_btex = GCTTextureHandler.create_empty_texture(self, tex.name)
-                    ExternalTexturePopup.tex_info = tex
-                    bpy.ops.gcto_handler.exttex('INVOKE_DEFAULT')
 
             if new_btex is None:
                 new_btex = GCTTextureHandler.get_fallback_texture(self)
@@ -314,9 +312,9 @@ class GCTTextureHandler(Operator):
 
         return btex
 
-    def create_texture_from_external(self,  tex_data, gct0_data):
+    def create_texture_from_external(self,  tex_name, gct0_data):
         img_size = gct0_data.width, gct0_data.height
-        bimg = bpy.data.images.get(tex_data.name)
+        bimg = bpy.data.images.get(tex_name)
         bimg.scale(img_size[0], img_size[1])
 
         pixels = []
@@ -335,7 +333,7 @@ class GCTTextureHandler(Operator):
                 pass
 
         bimg.pixels = pixels
-        btex = bpy.data.textures.get(tex_data.name)
+        btex = bpy.data.textures.get(tex_name)
         btex.image = bimg
 
         return btex
@@ -352,63 +350,3 @@ class GCTTextureHandler(Operator):
             mat.node_tree.links.new(node_tex.outputs[0], mat.node_tree.nodes[0].inputs["Base Color"])
 
         return mat
-
-
-class ExternalTexturePopup(Operator):
-    """popup for external textures"""
-    bl_label = "External Texture"
-    bl_idname = "gcto_handler.exttex"
-
-    tex_info = None
-
-    tex_path: bpy.props.StringProperty(
-        name="Path to texture",
-        description="",
-        subtype='FILE_PATH'
-    )
-
-    def draw(self, context):
-        layout = self.layout
-        layout.ui_units_x = 25
-
-        text_string_1 = "Texture " + "TEXTURE_NAME" + " is not contained in the model file."
-        text_string_2 = "Please provide the texture file. You can also press cancel to use a default texture."
-        text_string_3 = "Supported formats are: .BIN (GCT0), .GCT (GCT0)"
-        row = layout.row()
-        row.label(text=text_string_1)
-        row = layout.row()
-        row.label(text=text_string_2)
-        row = layout.row()
-        row.label(text=text_string_3)
-
-        row = layout.row()
-        row.prop(self, "tex_path")
-        row = layout.row()
-
-        row.template_popup_confirm("gcto_texture.nullpop", text="Import", cancel_text="Use Default")
-        #row.template_popup_confirm("gcto_texture.sucpopup", text="Import", cancel_text="Use Default")
-
-    def execute(self, context):
-        print(self.tex_path)
-
-        gct0: Gct0 = Gct0.from_file(self.tex_path)
-        GCTTextureHandler.create_texture_from_external(self, self.tex_info, gct0)
-        self.tex_info = None
-
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-
-
-class ExternalSuccessPopup(Operator):
-    """unused"""
-    bl_label = "Texture Imported"
-    bl_idname = "gcto_texture.sucpopup"
-
-    def execute(self, context):
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-

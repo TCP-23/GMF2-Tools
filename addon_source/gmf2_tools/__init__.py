@@ -3,8 +3,10 @@
 import bpy
 
 from .tools_setup import ToolsSetup
-from .gct0_handler import ExternalSuccessPopup
-from .gct0_handler import ExternalTexturePopup
+from .tools_setup import AddonWikiPanel
+from .texture_toolbar import ExternalTextureToolbar
+from .texture_toolbar import TextureReplacementOperator
+from .texture_toolbar import TextureCleanupOperator
 
 
 def menu_func_import(self, context):
@@ -13,13 +15,17 @@ def menu_func_import(self, context):
 
 def register():
     bpy.utils.register_class(ToolsSetup)
-    bpy.utils.register_class(ExternalSuccessPopup)
-    bpy.utils.register_class(ExternalTexturePopup)
+    bpy.utils.register_class(AddonWikiPanel)
+    bpy.utils.register_class(ExternalTextureToolbar)
+    bpy.utils.register_class(TextureReplacementOperator)
+    bpy.utils.register_class(TextureCleanupOperator)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 
 def unregister():
     bpy.utils.unregister_class(ToolsSetup)
-    bpy.utils.unregister_class(ExternalSuccessPopup)
-    bpy.utils.unregister_class(ExternalTexturePopup)
+    bpy.utils.unregister_class(AddonWikiPanel)
+    bpy.utils.unregister_class(ExternalTextureToolbar)
+    bpy.utils.unregister_class(TextureReplacementOperator)
+    bpy.utils.unregister_class(TextureCleanupOperator)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)

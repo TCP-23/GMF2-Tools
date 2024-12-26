@@ -81,6 +81,7 @@ class GM2ModelImporter(Operator):
     bl_label = "Import GMF2 model"
 
     obj_list = {}
+    temp_arm_list = {}
 
     def load_file_data(self, context, filepath):
         GM2ModelImporter.obj_list.clear()
@@ -146,11 +147,11 @@ class GM2ModelImporter(Operator):
             if bone.parent_obj is not None:
                 new_bone.parent = GM2ModelImporter.obj_list[bone.parent_obj]
 
-        for key, bone in GM2ModelImporter.obj_list.items():
-            if key.isBone:
-                pass
-                #GM2ObjectCreator.create_bone(self, context, bone)
+            temp_arm = GM2ObjectCreator.create_bone(self, context, bone.obj, new_bone)
+            GM2ModelImporter.temp_arm_list[temp_arm.name] = temp_arm
 
+            for obj in context.selected_objects:
+                obj.select_set(False)
 
     def get_mesh_strips(self, surf, processed_obj):
         surfbuf = surf.surface_data.strip_data

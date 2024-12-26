@@ -49,8 +49,6 @@ class Gmf2(KaitaiStruct):
         if not self._unnamed15 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
             raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed15, self._io, u"/seq/15")
         self._unnamed16 = self._io.read_bytes(8)
-        if not self._unnamed16 == b"\x00\x00\x00\x00\x00\x00\x00\x00":
-            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed16, self._io, u"/seq/16")
         if self.game_identifier == 4294967295:
             self._unnamed17 = self._io.read_bytes(16)
             if not self._unnamed17 == b"\xFF\xFF\xFF\xFF\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":

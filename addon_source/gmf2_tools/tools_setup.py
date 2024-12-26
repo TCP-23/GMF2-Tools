@@ -56,13 +56,13 @@ class ToolsSetup(Operator, ImportHelper):
 
     import_models: BoolProperty(
         name="Import Models & Armatures",
-        description="",
+        description="Turn this off if you just want the textures",
         default=True
     )
 
     import_mats: BoolProperty(
         name="Import Materials & Textures",
-        description="",
+        description="Turn this off if you don't care about textures, or want the models to load faster",
         default=True
     )
 
@@ -73,3 +73,17 @@ class ToolsSetup(Operator, ImportHelper):
         self.start_plugin(context, self.filepath)
 
         return {'FINISHED'}
+
+
+class AddonWikiPanel(bpy.types.Panel):
+    bl_idname = "addon_wiki.wiki"
+
+    bl_category = "GMF2 Tools"
+    bl_label = "Addon Instructions"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.operator("wm.url_open", text="Open Addon Instructions", icon='URL').url = "https://github.com/TCP-23/GMF2-Tools/wiki"

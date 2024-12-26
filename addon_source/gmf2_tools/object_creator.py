@@ -51,21 +51,25 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
     def create_mesh(self, meshData):
         pass
 
-    def create_bone(self, context, boneData):
-        new_arm = bpy.data.armatures.new(boneData.name)
+    def create_bone(self, context, boneData, parent_empty):
+        new_arm = bpy.data.armatures.new(f"temp_arm_{boneData.name}")
         arm_obj = object_utils.object_data_add(context, new_arm, operator=None)
+
+        arm_obj.parent = parent_empty
 
         context.view_layer.objects.active = arm_obj
         if context.active_object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
 
         new_bone = new_arm.edit_bones.new(boneData.name)
-        new_bone.head = boneData.location
-        if boneData.parent is not None:
-            pass
+        new_bone.head = tuple((0, 0, 0))
+        new_bone.tail = tuple((0, 0, 0.1))
+        #if boneData.parent is not None:
+            #pass
 
-        #new_bone.tail = boneData.position
         bpy.ops.object.mode_set(mode="OBJECT")
+
+        return arm_obj
 
 
     def create_mesh_vertices(self):
