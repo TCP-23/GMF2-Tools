@@ -147,7 +147,7 @@ class GM2ModelImporter(Operator):
             if bone.parent_obj is not None:
                 new_bone.parent = GM2ModelImporter.obj_list[bone.parent_obj]
 
-            temp_arm = GM2ObjectCreator.create_bone(self, context, bone.obj, new_bone)
+            temp_arm = GM2ObjectCreator.create_bone(self, context, bone, new_bone)
             GM2ModelImporter.temp_arm_list[temp_arm.name] = temp_arm
 
             for obj in context.selected_objects:

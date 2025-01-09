@@ -44,7 +44,7 @@ class TextureReplacementOperator(Operator):
         layout.prop(self, "tex_path")
 
         row = layout.row()
-        row.label(text="Supported formats are: .BIN (GCT0), .GCT (GCT0), .bin (DXT1 DDS), .dds (DXT1 DDS)")
+        row.label(text="Supported formats are: .BIN (GCT0), .GCT (GCT0)")
 
     def invoke(self, context, event):
         wm = context.window_manager

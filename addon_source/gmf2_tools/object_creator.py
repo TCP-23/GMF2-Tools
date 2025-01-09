@@ -52,8 +52,10 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         pass
 
     def create_bone(self, context, boneData, parent_empty):
-        new_arm = bpy.data.armatures.new(f"temp_arm_{boneData.name}")
+        new_arm = bpy.data.armatures.new(f"temp_arm_{boneData.obj.name}")
         arm_obj = object_utils.object_data_add(context, new_arm, operator=None)
+        if boneData.obj.name == "ROOT":
+            bpy.context.object.hide_set(True)
 
         arm_obj.parent = parent_empty
 
@@ -61,9 +63,13 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         if context.active_object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
 
-        new_bone = new_arm.edit_bones.new(boneData.name)
+        new_bone = new_arm.edit_bones.new(boneData.obj.name)
+
         new_bone.head = tuple((0, 0, 0))
-        new_bone.tail = tuple((0, 0, 0.1))
+        if boneData.first_child_obj is not None and boneData.first_child_obj.isBone:
+            new_bone.tail = tuple((boneData.first_child_obj.position.x * 0.1, boneData.first_child_obj.position.y * 0.1, boneData.first_child_obj.position.z * 0.1))
+        else:
+            new_bone.tail = tuple((0, 0, 0.1))
         #if boneData.parent is not None:
             #pass
 
