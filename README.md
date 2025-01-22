@@ -34,6 +34,7 @@ Other games that use the GMF2 model format might have support added in the futur
 - Models have a different order in the hierarchy than they should
 - Unknown error causing some models to not import (e.x. the Jacob's Ladder)
 - Some map models have an unknown position/rotation error
+- Some normals are reversed in certain models (e.x. Parts of NMH1 Travis's hair)
 
 ## Feature Checklist
 - ~~Vertices~~

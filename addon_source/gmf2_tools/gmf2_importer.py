@@ -88,7 +88,7 @@ class GM2ModelImporter(Operator):
 
         gm2: Gmf2 = Gmf2.from_file(filepath)
 
-        if gm2.game_identifier == 4294967295:
+        if gm2.game_identifier == 4294967295 or gm2.game_identifier == 8:
             TargetGame.gameId = GameTarget_Enum.NMH2
         else:
             TargetGame.gameId = GameTarget_Enum.NMH1
@@ -100,12 +100,16 @@ class GM2ModelImporter(Operator):
         objects, bones = sort_objects(unsorted_objects)
 
         if self.import_mats:
-            GCTTextureHandler.import_textures(self, context, gm2.textures)
-            GCTTextureHandler.import_materials(self, context, gm2.materials)
+            if len(gm2.textures) > 0:
+                GCTTextureHandler.import_textures(self, context, gm2.textures)
+            if len(gm2.materials) > 0:
+                GCTTextureHandler.import_materials(self, context, gm2.materials)
 
         if self.import_models:
-            GM2ModelImporter.import_bones(self, context, bones)
-            GM2ModelImporter.import_objects(self, context, objects)
+            if len(bones) > 0:
+                GM2ModelImporter.import_bones(self, context, bones)
+            if len(objects) > 0:
+                GM2ModelImporter.import_objects(self, context, objects)
 
     def import_objects(self, context, objects):
         for i, processed_obj in enumerate(objects):
@@ -140,6 +144,8 @@ class GM2ModelImporter(Operator):
         pass
 
     def import_bones(self, context, bones):
+        root_key = ""
+
         for i, bone in enumerate(bones):
             new_bone = GM2ObjectCreator.create_object(self, context, bone, self.up_axis)
             GM2ModelImporter.obj_list[bone.obj] = new_bone
@@ -150,8 +156,28 @@ class GM2ModelImporter(Operator):
             temp_arm = GM2ObjectCreator.create_bone(self, context, bone, new_bone)
             GM2ModelImporter.temp_arm_list[temp_arm.name] = temp_arm
 
-            for obj in context.selected_objects:
-                obj.select_set(False)
+        for obj in context.selected_objects:
+            obj.select_set(False)
+
+        for j, arm_obj in GM2ModelImporter.temp_arm_list.items():
+            root_key = j
+            arm_obj.select_set(True)
+
+        context.view_layer.objects.active = GM2ModelImporter.temp_arm_list[root_key]
+        bpy.ops.object.join()
+        context.view_layer.objects.active.name = "ROOT_armature"
+        bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
+
+        if context.active_object.mode != "EDIT":
+            bpy.ops.object.mode_set(mode="EDIT")
+
+        all_bones = context.view_layer.objects.active.data.edit_bones
+        for bone in bones:
+            if bone.parent_obj is not None:
+                all_bones[bone.obj.name].parent = all_bones[bone.parent_obj.name]
+
+        GM2ModelImporter.temp_arm_list = {}
+        bpy.ops.object.mode_set(mode="OBJECT")
 
     def get_mesh_strips(self, surf, processed_obj):
         surfbuf = surf.surface_data.strip_data

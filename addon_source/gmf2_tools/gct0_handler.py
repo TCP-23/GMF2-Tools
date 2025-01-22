@@ -2,6 +2,7 @@ import bpy
 import struct
 from bpy.types import Operator
 from .gct0 import Gct0
+from .gct0_decompress import *
 
 CMPR_BLOCK_SIZE = 8
 CMPR_SUBBLOCK_SIZE = 4
@@ -15,15 +16,6 @@ def rgb565_to_RGB(colorData):
     rgb_data = tuple((int(r * 255 / 31), int(g * 255 / 63), int(b * 255 / 31), 255))
 
     return rgb_data
-
-
-def rgba32_to_RGB(colorData):
-    return None
-
-
-def decompress_rgb5a3_texture(gct0_data):
-    pass
-
 
 """def decompress_rgba32_texture(gct0_data):
     BLOCK_W = 4
@@ -179,6 +171,34 @@ def decompress_cmpr_subblock(compressed_subblock):
     return decompressed_texture"""
 
 
+def load_rgb5a3_texture(gct0_data):
+    pixel_list = []
+
+    texture_data = decompress_rgb5a3_texture(gct0_data)
+    for pix in texture_data:
+        pixel_list.append(pix[0] / 255)
+        pixel_list.append(pix[1] / 255)
+        pixel_list.append(pix[2] / 255)
+        pixel_list.append(pix[3] / 255)
+
+        pixel_list.append(pix[0] / 255)
+        pixel_list.append(pix[1] / 255)
+        pixel_list.append(pix[2] / 255)
+        pixel_list.append(pix[3] / 255)
+
+        pixel_list.append(pix[0] / 255)
+        pixel_list.append(pix[1] / 255)
+        pixel_list.append(pix[2] / 255)
+        pixel_list.append(pix[3] / 255)
+
+        pixel_list.append(pix[0] / 255)
+        pixel_list.append(pix[1] / 255)
+        pixel_list.append(pix[2] / 255)
+        pixel_list.append(pix[3] / 255)
+
+    return pixel_list
+
+
 def load_cmpr_texture(gct0_data):
     pixel_list = []
 
@@ -198,7 +218,7 @@ class GCTTextureHandler(Operator):
     def import_textures(self, context, textures):
         for i, tex in enumerate(textures):
             new_btex = None
-            if tex.gct0_texture.encoding == Gct0.TextureEncoding.cmpr:
+            if tex.gct0_texture.encoding != Gct0.TextureEncoding.rgba32:
                 if "No File" not in str(tex.gct0_texture.texture_data):
                     new_btex = GCTTextureHandler.create_internal_texture(self, tex)
                 else:
@@ -261,8 +281,8 @@ class GCTTextureHandler(Operator):
 
         match tex_data.gct0_texture.encoding:
             case Gct0.TextureEncoding.rgb5a3:
-                pixels = [[0, 0, 0, 0]] * img_size[0] * img_size[1]
-                pass
+                #pixels = [0] * img_size[0] * img_size[1] * 4
+                pixels = load_rgb5a3_texture(tex_data.gct0_texture)
             case Gct0.TextureEncoding.rgba32:
                 pixels = [[0, 0, 0, 0]] * img_size[0] * img_size[1]
                 pass
@@ -288,8 +308,7 @@ class GCTTextureHandler(Operator):
 
         match gct0_data.encoding:
             case Gct0.TextureEncoding.rgb5a3:
-                pixels = [[0, 0, 0, 0]] * img_size[0] * img_size[1]
-                pass
+                pixels = load_rgb5a3_texture(gct0_data)
             case Gct0.TextureEncoding.rgb5a3:
                 pixels = [[0, 0, 0, 0]] * img_size[0] * img_size[1]
                 pass
@@ -300,6 +319,7 @@ class GCTTextureHandler(Operator):
                 pass
 
         bimg.pixels = pixels
+
         btex = bpy.data.textures.get(tex_name)
         btex.image = bimg
 

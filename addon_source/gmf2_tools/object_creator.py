@@ -5,6 +5,7 @@ from bpy.types import Operator
 from bpy_extras import object_utils
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 import math
+import mathutils
 import random
 
 from .target_game import GameTarget_Enum
@@ -54,8 +55,6 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
     def create_bone(self, context, boneData, parent_empty):
         new_arm = bpy.data.armatures.new(f"temp_arm_{boneData.obj.name}")
         arm_obj = object_utils.object_data_add(context, new_arm, operator=None)
-        if boneData.obj.name == "ROOT":
-            bpy.context.object.hide_set(True)
 
         arm_obj.parent = parent_empty
 
@@ -66,12 +65,12 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         new_bone = new_arm.edit_bones.new(boneData.obj.name)
 
         new_bone.head = tuple((0, 0, 0))
+        new_bone.tail = tuple((0, 0, 0.025))
         if boneData.first_child_obj is not None and boneData.first_child_obj.isBone:
             new_bone.tail = tuple((boneData.first_child_obj.position.x * 0.1, boneData.first_child_obj.position.y * 0.1, boneData.first_child_obj.position.z * 0.1))
-        else:
-            new_bone.tail = tuple((0, 0, 0.1))
-        #if boneData.parent is not None:
-            #pass
+
+        if new_bone.head == new_bone.tail or new_bone.length <= 0.01:
+            new_bone.tail = tuple((0, 0, 0.025))
 
         bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -120,12 +119,19 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         normals = []
 
         for i in range(len(mesh.vertices)):
-            if i < 0 or i > len(GM2ObjectCreator.normals):
+            idx = i
+
+            if idx < 0 or idx > len(GM2ObjectCreator.normals):
                 return
 
-            normals.append(GM2ObjectCreator.normals[i])
+            try:
+                normals.append(GM2ObjectCreator.normals[idx])
+            except KeyError:
+                print("Couldn't apply normals to model. ", idx, " was greater than the normal count of ", len(GM2ObjectCreator.normals))
+                #normals.append(GM2ObjectCreator.normals[idx - 1])
 
-        mesh.normals_split_custom_set_from_vertices(normals)
+        if len(mesh.vertices) == len(normals):
+            mesh.normals_split_custom_set_from_vertices(normals)
         GM2ObjectCreator.normals = {}
 
     def apply_materials(self, mesh, objData, mat_list):

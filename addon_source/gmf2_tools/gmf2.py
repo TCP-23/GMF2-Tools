@@ -40,19 +40,11 @@ class Gmf2(KaitaiStruct):
         self.unk_0x30 = self._io.read_u4le()
         self.unk_0x34 = self._io.read_u4le()
         self._unnamed13 = self._io.read_bytes(16)
-        if not self._unnamed13 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
-            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed13, self._io, u"/seq/13")
         self._unnamed14 = self._io.read_bytes(16)
-        if not self._unnamed14 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
-            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed14, self._io, u"/seq/14")
         self._unnamed15 = self._io.read_bytes(16)
-        if not self._unnamed15 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
-            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed15, self._io, u"/seq/15")
         self._unnamed16 = self._io.read_bytes(8)
-        if self.game_identifier == 4294967295:
+        if self.game_identifier == 4294967295 or self.game_identifier == 8:
             self._unnamed17 = self._io.read_bytes(16)
-            if not self._unnamed17 == b"\xFF\xFF\xFF\xFF\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\xFF\xFF\xFF\xFF\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self._unnamed17, self._io, u"/seq/17")
 
         self.textures = []
         for i in range(self.num_textures):
@@ -93,7 +85,7 @@ class Gmf2(KaitaiStruct):
             self.off_v_format = self._io.read_u4le()
             self.cullbox_position = Gmf2.FlVector4Le(self._io, self, self._root)
             self.cullbox_size = Gmf2.FlVector4Le(self._io, self, self._root)
-            if self._root.game_identifier == 4294967295:
+            if self._root.game_identifier == 4294967295 or self._root.game_identifier == 8:
                 self.unk_padding = self._io.read_bytes(64)
 
 
