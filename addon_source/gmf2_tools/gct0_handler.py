@@ -17,40 +17,8 @@ def rgb565_to_RGB(colorData):
 
     return rgb_data
 
-"""def decompress_rgba32_texture(gct0_data):
-    BLOCK_W = 4
-    BLOCK_H = 4
 
-    tex_width, tex_height = gct0_data.width, gct0_data.height
-    decompressed_texture = [0] * tex_width * tex_height * 4
-
-    head = 0
-
-    for y in range(0, tex_height, BLOCK_H):
-        for x in range(0, tex_width, BLOCK_W):
-            for y2 in range(BLOCK_H):
-                for x2 in range(BLOCK_W):
-                    idx = (((y + y2) * tex_width) + (x + x2)) * 4
-                    decompressed_texture[idx+0] = gct0_data.texture_data[head+33]
-                    decompressed_texture[idx+1] = gct0_data.texture_data[head+32]
-                    decompressed_texture[idx+2] = gct0_data.texture_data[head+1]
-                    decompressed_texture[idx+3] = gct0_data.texture_data[head]
-                    head += 2
-            head += 32
-
-    for y in range(tex_height // 2):
-        for x in range(tex_width):
-            index_top = (y * tex_width + x) * 4
-            index_bottom = ((tex_height - y - 1) * tex_width + x) * 4
-
-            # swap the pixels
-            decompressed_texture[index_top:index_top+4], decompressed_texture[index_bottom:index_bottom+4] = \
-                decompressed_texture[index_bottom:index_bottom+4], decompressed_texture[index_top:index_top+4]
-
-    return decompressed_texture"""
-
-
-def decompress_cmpr_texture(gct0_data):
+def cmpr_texture_testing(gct0_data):
     BLOCK_W = 8
     BLOCK_H = 8
     SUBBLOCK_W = 4
@@ -66,7 +34,7 @@ def decompress_cmpr_texture(gct0_data):
         for x in range(0, tex_width, BLOCK_W):
             for sub_y in range(0, BLOCK_H, SUBBLOCK_H):
                 for sub_x in range(0, BLOCK_W, SUBBLOCK_W):
-                    color0_565, color1_565 = struct.unpack('>HH', gct0_data.texture_data[head:head+4])
+                    color0_565, color1_565 = struct.unpack('>HH', gct0_data.texture_data[head:head + 4])
                     head += 4
 
                     color0_rgb = rgb565_to_RGB(color0_565)
@@ -97,78 +65,18 @@ def decompress_cmpr_texture(gct0_data):
                             if pixel_y < tex_height and pixel_x < tex_width:
                                 index = (pixel_y * tex_width + pixel_x) * 4
 
-                                decompressed_data[index:index+4] = color_map[(color_pattern >> (6 - (sub_x_offset * 2))) & 3]
+                                decompressed_data[index:index + 4] = color_map[
+                                    (color_pattern >> (6 - (sub_x_offset * 2))) & 3]
 
     for y in range(tex_height // 2):
         for x in range(tex_width):
             index_top = (y * tex_width + x) * 4
             index_bottom = ((tex_height - y - 1) * tex_width + x) * 4
 
-            decompressed_data[index_top:index_top+4], decompressed_data[index_bottom:index_bottom+4] = \
-                decompressed_data[index_bottom:index_bottom+4], decompressed_data[index_top:index_top+4]
+            decompressed_data[index_top:index_top + 4], decompressed_data[index_bottom:index_bottom + 4] = \
+                decompressed_data[index_bottom:index_bottom + 4], decompressed_data[index_top:index_top + 4]
 
     return decompressed_data
-
-
-"""def decompress_cmpr_block(compressed_block):
-    decompressed_block = []
-
-    head = 0
-    for subblock in range(0, CMPR_BLOCK_SIZE * CMPR_BLOCK_SIZE, CMPR_SUBBLOCK_SIZE * CMPR_SUBBLOCK_SIZE):
-        compressed_subblock = compressed_block[head:head+8]
-        decompressed_subblock = decompress_cmpr_subblock(compressed_subblock)
-        decompressed_block.append(decompressed_subblock)
-        head += 8
-
-    return decompressed_block
-
-
-def decompress_cmpr_subblock(compressed_subblock):
-    decompressed_subblock = []
-
-    color0_565, color1_565 = struct.unpack('>HH', compressed_subblock[0:4])
-    color_map = [rgb565_to_RGB(color0_565), rgb565_to_RGB(color1_565), [0, 0, 0, 0], [0, 0, 0, 0]]
-
-    if color0_565 > color1_565:
-        for i in range(4):
-            color_map[2][i] = int((2 * color_map[0][i] + color_map[1][i]) / 3)
-            color_map[3][i] = int((2 * color_map[1][i] + color_map[0][i]) / 3)
-    else:
-        for i in range(4):
-            color_map[2][i] = int((color_map[0][i] + color_map[1][i]) / 2)
-
-    head = 0
-    for pixel_column in range(0, CMPR_SUBBLOCK_SIZE):
-        color_pattern = compressed_subblock[pixel_column]
-
-        for pixel_row in range(0, CMPR_SUBBLOCK_SIZE):
-            decompressed_subblock[head:head+4] = color_map[(color_pattern >> (6 - (pixel_row * 2))) & 3]
-            head += 4
-
-    return decompressed_subblock"""
-
-
-"""def decompress_cmpr_texture(tex_data):
-    tex_width, tex_height = tex_data.gct0_texture.width, tex_data.gct0_texture.height
-    decompressed_texture = [0] * tex_width * tex_height * 4
-    decompressed_blocks = []
-
-    head = 0
-    for block in range(0, tex_height * tex_width, CMPR_BLOCK_SIZE * CMPR_BLOCK_SIZE):
-        compressed_block = tex_data.gct0_texture.texture_data[head:head+32]
-        decompressed_block = decompress_cmpr_block(compressed_block)
-        decompressed_blocks.append(decompressed_block)
-        head += 32
-
-    for y in range(tex_height // 2):
-        for x in range(tex_width):
-            index_top = (y * tex_width + x) * 4
-            index_bottom = ((tex_height - y - 1) * tex_width + x) * 4
-
-            decompressed_texture[index_top:index_top+4], decompressed_texture[index_bottom:index_bottom+4] = \
-                decompressed_texture[index_bottom:index_bottom+4], decompressed_texture[index_top:index_top+4]
-
-    return decompressed_texture"""
 
 
 def load_rgb5a3_texture(gct0_data):
@@ -176,25 +84,32 @@ def load_rgb5a3_texture(gct0_data):
 
     texture_data = decompress_rgb5a3_texture(gct0_data)
     for pix in texture_data:
-        pixel_list.append(pix[0] / 255)
-        pixel_list.append(pix[1] / 255)
-        pixel_list.append(pix[2] / 255)
-        pixel_list.append(pix[3] / 255)
+        try:
+            pixel_list.append(pix[0][0] / 255)
+            pixel_list.append(pix[0][1] / 255)
+            pixel_list.append(pix[0][2] / 255)
+            pixel_list.append(pix[0][3] / 255)
 
-        pixel_list.append(pix[0] / 255)
-        pixel_list.append(pix[1] / 255)
-        pixel_list.append(pix[2] / 255)
-        pixel_list.append(pix[3] / 255)
+            pixel_list.append(pix[0][0] / 255)
+            pixel_list.append(pix[0][1] / 255)
+            pixel_list.append(pix[0][2] / 255)
+            pixel_list.append(pix[0][3] / 255)
 
-        pixel_list.append(pix[0] / 255)
-        pixel_list.append(pix[1] / 255)
-        pixel_list.append(pix[2] / 255)
-        pixel_list.append(pix[3] / 255)
+            pixel_list.append(pix[0][0] / 255)
+            pixel_list.append(pix[0][1] / 255)
+            pixel_list.append(pix[0][2] / 255)
+            pixel_list.append(pix[0][3] / 255)
 
-        pixel_list.append(pix[0] / 255)
-        pixel_list.append(pix[1] / 255)
-        pixel_list.append(pix[2] / 255)
-        pixel_list.append(pix[3] / 255)
+            pixel_list.append(pix[0][0] / 255)
+            pixel_list.append(pix[0][1] / 255)
+            pixel_list.append(pix[0][2] / 255)
+            pixel_list.append(pix[0][3] / 255)
+        except TypeError:
+            print(pix[0])
+            print(pix[1])
+            print(pix[2])
+            print(pix[3])
+            return None
 
     return pixel_list
 
@@ -202,8 +117,16 @@ def load_rgb5a3_texture(gct0_data):
 def load_cmpr_texture(gct0_data):
     pixel_list = []
 
-    texture_data = decompress_cmpr_texture(gct0_data)
+    texture_data = cmpr_texture_testing(gct0_data)
     for pix in texture_data:
+        """try:
+            pixel_list.append(pix[0] / 255)
+            pixel_list.append(pix[1] / 255)
+            pixel_list.append(pix[2] / 255)
+            pixel_list.append(pix[3] / 255)
+        except TypeError:
+            print(pix)
+            return None"""
         pixel_list.append(pix / 255)
 
     return pixel_list
@@ -281,7 +204,6 @@ class GCTTextureHandler(Operator):
 
         match tex_data.gct0_texture.encoding:
             case Gct0.TextureEncoding.rgb5a3:
-                #pixels = [0] * img_size[0] * img_size[1] * 4
                 pixels = load_rgb5a3_texture(tex_data.gct0_texture)
             case Gct0.TextureEncoding.rgba32:
                 pixels = [[0, 0, 0, 0]] * img_size[0] * img_size[1]
@@ -292,10 +214,16 @@ class GCTTextureHandler(Operator):
                 print("Texture format not supported (yet)")
                 pass
 
-        bimg.pixels = pixels
+        try:
+            bimg.pixels = pixels
+        except:
+            print(tex_data.name)
+            print(len(bimg.pixels))
+            print(len(pixels))
 
         btex = bpy.data.textures.new(tex_data.name, type='IMAGE')
         btex.image = bimg
+        btex.id_data["GCT0 Encode"] = str(tex_data.gct0_texture.encoding).replace("TextureEncoding.", "")
 
         return btex
 
@@ -335,5 +263,6 @@ class GCTTextureHandler(Operator):
             node_tex.image = texture.image
 
             mat.node_tree.links.new(node_tex.outputs[0], mat.node_tree.nodes[0].inputs["Base Color"])
+            mat.node_tree.links.new(node_tex.outputs["Alpha"], mat.node_tree.nodes[0].inputs["Alpha"])
 
         return mat

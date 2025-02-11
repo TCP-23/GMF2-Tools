@@ -8,7 +8,7 @@ from bpy.props import BoolProperty, StringProperty, EnumProperty
 from .gmf2_importer import GM2ModelImporter
 
 
-class ToolsSetup(Operator, ImportHelper):
+class GMF2_Setup(Operator, ImportHelper):
     bl_idname = "gm2_importer.setup"
     bl_label = "Import GMF2 model"
 
@@ -26,17 +26,6 @@ class ToolsSetup(Operator, ImportHelper):
         default='OPT_A',
     )
 
-    """armature_mode: EnumProperty(
-        name="Armature Import Mode",
-        description="",
-        items=(
-            ('OPT_A', "Import mesh & armature", ""),
-            ('OPT_B', "Import mesh only", "Won't import models parented to the armature (e.g. most faces)"),
-            ('OPT_C', "Import armature only", "Will import models parented to the armature (e.g. most faces)"),
-        ),
-        default='OPT_A'
-    )"""
-
     up_axis: EnumProperty(
         name="Up Axis",
         description="The up axis of the model you are trying to import. \nMess with this if your model imports in the wrong orientation.\n",
@@ -48,11 +37,16 @@ class ToolsSetup(Operator, ImportHelper):
         default='OPT_B'
     )
 
-    smooth_shading: BoolProperty(
-        name="Use Smooth Shading",
-        description="Defaults the model to use 'smooth' shading instead of 'flat' shading. \nLeave this on in most cases",
-        default=True
-    )
+    """data_import: EnumProperty(
+        name="Data Import Type",
+        description="",
+        items=(
+            ('OPT_A', "Everything", ""),
+            ('OPT_B', "Models & Textures", ""),
+            ('OPT_C', "Models Only", ""),
+            ('OPT_D', "Textures Only", ""),
+        )
+    )"""
 
     import_models: BoolProperty(
         name="Import Models & Armatures",
@@ -66,6 +60,18 @@ class ToolsSetup(Operator, ImportHelper):
         default=True
     )
 
+    import_normals: BoolProperty(
+        name="Use Imported Normals",
+        description="Use the normals that are packed into the model file",
+        default=True
+    )
+
+    display_tails: BoolProperty(
+        name="Display Bone Tails",
+        description="Generate and display bone tails based on children",
+        default=False
+    )
+
     def start_plugin(self, context, filepath):
         GM2ModelImporter.load_file_data(self, context, filepath)
 
@@ -73,6 +79,27 @@ class ToolsSetup(Operator, ImportHelper):
         self.start_plugin(context, self.filepath)
 
         return {'FINISHED'}
+
+
+class FLCG_Setup(Operator, ImportHelper):
+    bl_idname = "ghman_tools.gcl_setup"
+    bl_label = "Import FLCG Model"
+
+    filter_glob: StringProperty(default="*.gcl", options={'HIDDEN'})
+
+
+class GAN2_Setup(Operator, ImportHelper):
+    bl_idname = "ghman_tools.ga2_setup"
+    bl_label = "Import GAN2 Animation"
+
+    filter_glob: StringProperty(default="*.ga2", options={'HIDDEN'})
+
+
+class RMHG_Setup(Operator, ImportHelper):
+    bl_idname = "ghman_tools.rsl_setup"
+    bl_label = "Import RMHG Archive"
+
+    filter_glob: StringProperty(default="*.rsl", options={'HIDDEN'})
 
 
 class AddonWikiPanel(bpy.types.Panel):

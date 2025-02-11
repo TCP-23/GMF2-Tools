@@ -134,8 +134,7 @@ class GM2ModelImporter(Operator):
                         GM2ObjectCreator.create_mesh_surface(self, new_obj.data,
                                                              GM2ObjectCreator.SurfData(verts, idxs, uvs, normals), -1)
 
-                if self.smooth_shading:
-                    new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
+                new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
 
                 if len(GM2ObjectCreator.normals) > 0:
                     GM2ObjectCreator.apply_normals(self, new_obj.data)
@@ -145,6 +144,11 @@ class GM2ModelImporter(Operator):
 
     def import_bones(self, context, bones):
         root_key = ""
+        bone_model = None
+
+        if not self.display_tails:
+            bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1)
+            bone_model = bpy.context.active_object
 
         for i, bone in enumerate(bones):
             new_bone = GM2ObjectCreator.create_object(self, context, bone, self.up_axis)
@@ -178,6 +182,22 @@ class GM2ModelImporter(Operator):
 
         GM2ModelImporter.temp_arm_list = {}
         bpy.ops.object.mode_set(mode="OBJECT")
+
+        if not self.display_tails:
+            #bpy.ops.object.mode_set(mode="POSE")
+
+            pose_bones = bpy.context.object.pose.bones
+
+            for bone in pose_bones:
+                bone.custom_shape = bone_model
+                bone.custom_shape_scale_xyz = tuple((0.005, 0.005, 0.005))
+                bone.use_custom_shape_bone_size = False
+
+            bpy.ops.object.mode_set(mode="OBJECT")
+
+            bpy.ops.object.select_all(action='DESELECT')
+            bpy.data.objects[bone_model.name].select_set(True)
+            bpy.ops.object.delete(use_global=False, confirm=False)
 
     def get_mesh_strips(self, surf, processed_obj):
         surfbuf = surf.surface_data.strip_data
