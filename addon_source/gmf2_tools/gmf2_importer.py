@@ -86,6 +86,7 @@ class GM2ModelImporter(Operator):
 
     def load_file_data(self, context, filepath):
         GM2ModelImporter.obj_list.clear()
+        GM2ModelImporter.junk_objs.clear()
 
         gm2: Gmf2 = Gmf2.from_file(filepath)
 
@@ -229,7 +230,8 @@ class GM2ModelImporter(Operator):
 
             for junk_obj in GM2ModelImporter.junk_objs:
                 bpy.data.objects[junk_obj.name].select_set(True)
-                bpy.ops.object.delete(use_global=False, confirm=False)
+
+            bpy.ops.object.delete(use_global=False, confirm=False)
 
     def get_mesh_strips(self, surf, processed_obj):
         surfbuf = surf.surface_data.strip_data
