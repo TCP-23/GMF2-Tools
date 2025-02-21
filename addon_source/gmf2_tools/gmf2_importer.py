@@ -81,6 +81,7 @@ class GM2ModelImporter(Operator):
     bl_label = "Import GMF2 model"
 
     obj_list = {}
+    junk_objs = {}
     temp_arm_list = {}
 
     def load_file_data(self, context, filepath):
@@ -98,6 +99,7 @@ class GM2ModelImporter(Operator):
             unsorted_objects[world_object.offset] = world_object
 
         objects, bones = sort_objects(unsorted_objects)
+        obj_armature = None
 
         if self.import_mats:
             if len(gm2.textures) > 0:
@@ -107,9 +109,11 @@ class GM2ModelImporter(Operator):
 
         if self.import_models:
             if len(bones) > 0:
-                GM2ModelImporter.import_bones(self, context, bones)
+                obj_armature = GM2ModelImporter.import_bones(self, context, bones)
             if len(objects) > 0:
                 GM2ModelImporter.import_objects(self, context, objects)
+
+        GM2ModelImporter.cleanup_imported(self, context, objects, obj_armature)
 
     def import_objects(self, context, objects):
         for i, processed_obj in enumerate(objects):
@@ -120,7 +124,6 @@ class GM2ModelImporter(Operator):
                 new_obj.parent = GM2ModelImporter.obj_list[processed_obj.parent_obj]
 
             if processed_obj.obj.surfaces is not None:
-                #new_mesh = GM2ObjectCreator.create_mesh(self, processed_obj)
                 if self.import_mats:
                     GM2ObjectCreator.apply_materials(self, new_obj, processed_obj.obj, GCTTextureHandler.mat_list)
 
@@ -146,16 +149,20 @@ class GM2ModelImporter(Operator):
         root_key = ""
         bone_model = None
 
+        combined_armature = None
+
         if not self.display_tails:
             bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1)
             bone_model = bpy.context.active_object
 
         for i, bone in enumerate(bones):
             new_bone = GM2ObjectCreator.create_object(self, context, bone, self.up_axis)
+            GM2ModelImporter.junk_objs[bone.obj] = new_bone
             GM2ModelImporter.obj_list[bone.obj] = new_bone
 
             if bone.parent_obj is not None:
                 new_bone.parent = GM2ModelImporter.obj_list[bone.parent_obj]
+                new_bone.parent = GM2ModelImporter.junk_objs[bone.parent_obj]
 
             temp_arm = GM2ObjectCreator.create_bone(self, context, bone, new_bone)
             GM2ModelImporter.temp_arm_list[temp_arm.name] = temp_arm
@@ -169,7 +176,9 @@ class GM2ModelImporter(Operator):
 
         context.view_layer.objects.active = GM2ModelImporter.temp_arm_list[root_key]
         bpy.ops.object.join()
-        context.view_layer.objects.active.name = "ROOT_armature"
+
+        combined_armature = context.view_layer.objects.active
+        combined_armature.name = "ROOT_armature"
         bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
 
         if context.active_object.mode != "EDIT":
@@ -184,8 +193,6 @@ class GM2ModelImporter(Operator):
         bpy.ops.object.mode_set(mode="OBJECT")
 
         if not self.display_tails:
-            #bpy.ops.object.mode_set(mode="POSE")
-
             pose_bones = bpy.context.object.pose.bones
 
             for bone in pose_bones:
@@ -198,6 +205,31 @@ class GM2ModelImporter(Operator):
             bpy.ops.object.select_all(action='DESELECT')
             bpy.data.objects[bone_model.name].select_set(True)
             bpy.ops.object.delete(use_global=False, confirm=False)
+
+        return combined_armature
+
+    def cleanup_imported(self, context, process_obj_list, root_armature):
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.object.select_all(action='DESELECT')
+
+        if self.import_models:
+            for obj in process_obj_list:
+                if obj.parent_obj is not None:
+                    if GM2ModelImporter.junk_objs[obj.parent_obj] is not None:
+                        bpy.data.objects[GM2ModelImporter.obj_list[obj.obj].name].select_set(True)
+
+                        parent_name = GM2ModelImporter.obj_list[obj.parent_obj].name
+                        context.view_layer.objects.active = root_armature
+                        root_armature.data.bones.active = root_armature.data.bones[parent_name]
+
+                        bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
+                        bpy.ops.object.parent_set(type='BONE')
+
+                        bpy.data.objects[GM2ModelImporter.obj_list[obj.obj].name].select_set(False)
+
+            for junk_obj in GM2ModelImporter.junk_objs:
+                bpy.data.objects[junk_obj.name].select_set(True)
+                bpy.ops.object.delete(use_global=False, confirm=False)
 
     def get_mesh_strips(self, surf, processed_obj):
         surfbuf = surf.surface_data.strip_data
