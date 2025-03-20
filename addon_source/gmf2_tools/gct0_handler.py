@@ -224,6 +224,7 @@ class GCTTextureHandler(Operator):
         btex = bpy.data.textures.new(tex_data.name, type='IMAGE')
         btex.image = bimg
         btex.id_data["GCT0 Encode"] = str(tex_data.gct0_texture.encoding).replace("TextureEncoding.", "")
+        btex.use_fake_user = True
 
         return btex
 

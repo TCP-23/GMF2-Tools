@@ -116,7 +116,7 @@ class GM2ModelImporter(Operator):
 
         GM2ModelImporter.cleanup_imported(self, context, objects, obj_armature)
 
-    def import_objects(self, context, objects):
+    """def import_objects(self, context, objects):
         for i, processed_obj in enumerate(objects):
             new_obj = GM2ObjectCreator.create_object(self, context, processed_obj, self.up_axis)
             GM2ModelImporter.obj_list[processed_obj.obj] = new_obj
@@ -141,10 +141,92 @@ class GM2ModelImporter(Operator):
                 new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
 
                 if len(GM2ObjectCreator.normals) > 0:
-                    GM2ObjectCreator.apply_normals(self, new_obj.data)
+                    GM2ObjectCreator.apply_normals(self, new_obj.data)"""
 
-    def import_meshes(self, context, meshes):
-        pass
+    def import_objects(self, context, objects):
+        for processed_obj in objects:
+            if processed_obj.obj.surfaces is not None:
+                obj_data = [[], [], [], [], [], []]
+
+                obj_data[0] += GM2ModelImporter.get_surface_verts(self, processed_obj, processed_obj.obj.surfaces[0])
+                for surf in processed_obj.obj.surfaces:
+                    surf_idxs, surf_uvs, surf_norms = GM2ModelImporter.get_surface_data(self, processed_obj, surf)
+
+                    obj_data[1].append(surf_idxs)
+                    obj_data[2] += surf_uvs
+                    obj_data[3] += surf_norms
+                    obj_data[5].append(surf.off_material)
+
+                new_mesh = GM2ObjectCreator.create_mesh(self, context, processed_obj, obj_data)
+                GM2ModelImporter.obj_list[processed_obj.obj] = new_mesh
+
+                if processed_obj.parent_obj is not None:
+                    new_mesh.parent = GM2ModelImporter.obj_list[processed_obj.parent_obj]
+
+                if len(GM2ObjectCreator.normals) > 0:
+                    GM2ObjectCreator.apply_normals(self, new_mesh.data)
+
+                #if self.import_mats:
+                    #GM2ObjectCreator.apply_materials(self, new_mesh, processed_obj.obj, GCTTextureHandler.mat_list)
+
+                #new_mesh.data.polygons.foreach_set('use_smooth', [True] * len(new_mesh.data.polygons))
+            else:
+                new_obj = GM2ObjectCreator.create_object(self, context, processed_obj, self.up_axis)
+                GM2ModelImporter.obj_list[processed_obj.obj] = new_obj
+
+                if processed_obj.parent_obj is not None:
+                    new_obj.parent = GM2ModelImporter.obj_list[processed_obj.parent_obj]
+
+    def get_surface_verts(self, processed_obj, surf):
+        mesh_strips = GM2ModelImporter.get_mesh_strips(self, surf, processed_obj)
+
+        if not mesh_strips:
+            return []
+
+        verts = []
+
+        for v in surf.v_buf:
+            if TargetGame.gameId == GameTarget_Enum.NMH1:
+                vertPos = Vec3((v.x / pow(2, processed_obj.obj.v_divisor)) * 0.1,
+                               (v.y / pow(2, processed_obj.obj.v_divisor)) * 0.1,
+                               (v.z / pow(2, processed_obj.obj.v_divisor)) * 0.1)
+            elif TargetGame.gameId == GameTarget_Enum.NMH2:
+                vertPos = Vec3(v.x * 0.1, v.y * 0.1, v.z * 0.1)
+            else:
+                return []
+
+            verts.append(vertPos)
+
+        return verts
+
+    def get_surface_data(self, processed_obj, surf):
+        mesh_strips = GM2ModelImporter.get_mesh_strips(self, surf, processed_obj)
+
+        if not mesh_strips:
+            return [], [], []
+
+        indices = []
+        uvs = []
+        normals = []
+
+        for idx in mesh_strips:
+            normals.append(idx.n)
+            uvs.append(tuple((idx.u / pow(2, 10), -(idx.v / pow(2, 10)) + 1)))
+
+        valid_idx_count = 0
+        for iii in range(len(mesh_strips) - 2):
+            valid_idx_count += 1
+            if valid_idx_count >= 4:
+                valid_idx_count = 1
+
+            if valid_idx_count == 1:
+                va = mesh_strips[iii].i + 1
+                vb = mesh_strips[iii + 1].i + 1
+                vc = mesh_strips[iii + 2].i + 1
+
+                indices.append(tuple((va, vb, vc)))
+
+        return indices, uvs, normals
 
     def import_bones(self, context, bones):
         root_key = ""
@@ -215,20 +297,19 @@ class GM2ModelImporter(Operator):
 
         if self.import_models:
             for obj in process_obj_list:
-                if obj.parent_obj is not None:
-                    if GM2ModelImporter.junk_objs[obj.parent_obj] is not None:
-                        bpy.data.objects[GM2ModelImporter.obj_list[obj.obj].name].select_set(True)
+                if obj.parent_obj is not None and obj.parent_obj in GM2ModelImporter.junk_objs:
+                    bpy.data.objects[GM2ModelImporter.obj_list[obj.obj].name].select_set(True)
 
-                        parent_name = GM2ModelImporter.obj_list[obj.parent_obj].name
-                        context.view_layer.objects.active = root_armature
-                        root_armature.data.bones.active = root_armature.data.bones[parent_name]
+                    parent_name = GM2ModelImporter.obj_list[obj.parent_obj].name
+                    context.view_layer.objects.active = root_armature
+                    root_armature.data.bones.active = root_armature.data.bones[parent_name]
 
-                        bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
-                        bpy.ops.object.parent_set(type='BONE')
+                    bpy.ops.object.parent_set(type='BONE', keep_transform=True)
 
-                        bpy.data.objects[GM2ModelImporter.obj_list[obj.obj].name].select_set(False)
+                    bpy.data.objects[GM2ModelImporter.obj_list[obj.obj].name].select_set(False)
 
             for junk_obj in GM2ModelImporter.junk_objs:
+                GM2ModelImporter.junk_objs[junk_obj].data.user_clear()
                 bpy.data.objects[junk_obj.name].select_set(True)
 
             bpy.ops.object.delete(use_global=False, confirm=False)
@@ -301,7 +382,7 @@ class GM2ModelImporter(Operator):
 
         return mesh_strips
 
-    def get_surface_data(self, processed_obj, surf, surf_id):
+    """def get_surface_data(self, processed_obj, surf, surf_id):
         mesh_strips = GM2ModelImporter.get_mesh_strips(self, surf, processed_obj)
 
         if not mesh_strips:
@@ -342,4 +423,4 @@ class GM2ModelImporter(Operator):
 
                 indices.append(tuple((va, vb, vc)))
 
-        return verts, indices, uvs, normals
+        return verts, indices, uvs, normals"""
