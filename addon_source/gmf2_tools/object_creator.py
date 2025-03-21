@@ -160,17 +160,20 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
 
                 if not bm.faces.get(poly_group):
                     new_face = bm.faces.new(poly_group)
-                    for mesh_loop in new_face.loops:
-                        vert = mesh_loop.vert
-                        if GM2ObjectCreator.normals.get(vert.index) is None and vert.index >= 0:
-                            GM2ObjectCreator.normals[vert.index] = norms[uv_iter]
+                else:
+                    new_face = bm.faces.get(poly_group)
 
-                        uv_loop = mesh_loop[uv_layer]
-                        uv_loop.uv = uvs[uv_iter]
-                        uv_iter += 1
+                for mesh_loop in new_face.loops:
+                    vert = mesh_loop.vert
+                    if GM2ObjectCreator.normals.get(vert.index) is None and vert.index >= 0:
+                        GM2ObjectCreator.normals[vert.index] = norms[uv_iter]
 
-                    if self.import_mats:
-                        new_face.material_index = mesh["MatIdxs"][str(mat_index[mat_iter])]
+                    uv_loop = mesh_loop[uv_layer]
+                    uv_loop.uv = uvs[uv_iter]
+                    uv_iter += 1
+
+                if self.import_mats:
+                    new_face.material_index = mesh["MatIdxs"][str(mat_index[mat_iter])]
 
             mat_iter += 1
 
