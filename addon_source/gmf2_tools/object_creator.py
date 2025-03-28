@@ -130,7 +130,7 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
                     mesh.vertices[idx[1] - 1].select = True
                     mesh.vertices[idx[2] - 1].select = True
                 except:
-                    print(idx)
+                    pass
 
             bpy.ops.object.mode_set(mode="EDIT")
             bpy.ops.object.vertex_group_assign()

@@ -187,9 +187,16 @@ class GM2ModelImporter(Operator):
 
         for v in surf.v_buf:
             if TargetGame.gameId == GameTarget_Enum.NMH1:
-                vertPos = Vec3((v.x / pow(2, processed_obj.obj.v_divisor)) * 0.1,
+                try:
+                    vertPos = Vec3((v.x / pow(2, processed_obj.obj.v_divisor)) * 0.1,
                                (v.y / pow(2, processed_obj.obj.v_divisor)) * 0.1,
                                (v.z / pow(2, processed_obj.obj.v_divisor)) * 0.1)
+                except OverflowError:
+                    vertPos = Vec3(1 * 0.1,
+                               1 * 0.1,
+                               1 * 0.1)
+                    print(len(surf.v_buf))
+                    return []
             elif TargetGame.gameId == GameTarget_Enum.NMH2:
                 vertPos = Vec3(v.x * 0.1, v.y * 0.1, v.z * 0.1)
             else:
