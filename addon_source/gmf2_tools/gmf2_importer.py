@@ -66,13 +66,18 @@ def sort_objects(objs):
 def get_tristrip_format(surface, num_idx):
     surfbuf = surface.surface_data.strip_data
 
-    if surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 153 \
-            or (surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 0
-                # and surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 4] != 0
-                and num_idx == surface.surface_data.num_vertices):
-        return 1
-    else:
-        return 0
+    try:
+        if surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 153 \
+                or (surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 5] == 0
+                    # and surfbuf[struct.unpack('>H', surfbuf[2:4])[0] * 11 + 4] != 0
+                    and num_idx == surface.surface_data.num_vertices):
+            return 1
+    except IndexError:
+        pass
+        #print("Error in detecting tristrip format!")
+        #print(f"Surface buffer length: {len(surfbuf)}")
+
+    return 0
 
 
 class GM2ModelImporter(Operator):
