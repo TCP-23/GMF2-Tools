@@ -6,6 +6,7 @@ from bpy_extras.io_utils import ImportHelper
 from bpy.props import BoolProperty, StringProperty, EnumProperty
 
 from .gmf2_importer import GM2ModelImporter
+from .gan2_importer import GA2AnimImporter
 
 
 class GMF2_Setup(Operator, ImportHelper):
@@ -90,9 +91,17 @@ class FLCG_Setup(Operator, ImportHelper):
 
 class GAN2_Setup(Operator, ImportHelper):
     bl_idname = "ghman_tools.ga2_setup"
-    bl_label = "Import GAN2 Animation"
+    bl_label = "Import GAN2 Anim"
 
     filter_glob: StringProperty(default="*.ga2", options={'HIDDEN'})
+
+    def start_plugin(self, context, filepath):
+        GA2AnimImporter.load_file_data(self, context, filepath)
+
+    def execute(self, context):
+        self.start_plugin(context, self.filepath)
+
+        return {'FINISHED'}
 
 
 class RMHG_Setup(Operator, ImportHelper):
