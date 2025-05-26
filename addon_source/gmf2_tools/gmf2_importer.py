@@ -13,7 +13,6 @@ from .gct0_handler import GCTTextureHandler
 Vec3 = namedtuple("Vec3", "x y z")
 Gm2Idx = namedtuple("Gm2Idx", "i u v n")
 
-
 class ProcessedObject:
     obj = None
     parent_obj = None
@@ -116,33 +115,6 @@ class GM2ModelImporter(Operator):
 
         GM2ModelImporter.cleanup_imported(self, context, objects, obj_armature)
 
-    """def import_objects(self, context, objects):
-        for i, processed_obj in enumerate(objects):
-            new_obj = GM2ObjectCreator.create_object(self, context, processed_obj, self.up_axis)
-            GM2ModelImporter.obj_list[processed_obj.obj] = new_obj
-
-            if processed_obj.parent_obj is not None:
-                new_obj.parent = GM2ModelImporter.obj_list[processed_obj.parent_obj]
-
-            if processed_obj.obj.surfaces is not None:
-                if self.import_mats:
-                    GM2ObjectCreator.apply_materials(self, new_obj, processed_obj.obj, GCTTextureHandler.mat_list)
-
-                for ii, surf in enumerate(processed_obj.obj.surfaces):
-                    verts, idxs, uvs, normals = GM2ModelImporter.get_surface_data(self, processed_obj, surf, ii)
-                    if self.import_mats:
-                        GM2ObjectCreator.create_mesh_surface(self, new_obj.data,
-                                                             GM2ObjectCreator.SurfData(verts, idxs, uvs, normals),
-                                                             surf.off_material)
-                    else:
-                        GM2ObjectCreator.create_mesh_surface(self, new_obj.data,
-                                                             GM2ObjectCreator.SurfData(verts, idxs, uvs, normals), -1)
-
-                new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
-
-                if len(GM2ObjectCreator.normals) > 0:
-                    GM2ObjectCreator.apply_normals(self, new_obj.data)"""
-
     def import_objects(self, context, objects):
         for processed_obj in objects:
             if processed_obj.obj.surfaces is not None:
@@ -165,11 +137,6 @@ class GM2ModelImporter(Operator):
 
                 if len(GM2ObjectCreator.normals) > 0:
                     GM2ObjectCreator.apply_normals(self, new_mesh.data)
-
-                #if self.import_mats:
-                    #GM2ObjectCreator.apply_materials(self, new_mesh, processed_obj.obj, GCTTextureHandler.mat_list)
-
-                #new_mesh.data.polygons.foreach_set('use_smooth', [True] * len(new_mesh.data.polygons))
             else:
                 new_obj = GM2ObjectCreator.create_object(self, context, processed_obj, self.up_axis)
                 GM2ModelImporter.obj_list[processed_obj.obj] = new_obj
@@ -388,46 +355,3 @@ class GM2ModelImporter(Operator):
             i_remaining -= num_idx
 
         return mesh_strips
-
-    """def get_surface_data(self, processed_obj, surf, surf_id):
-        mesh_strips = GM2ModelImporter.get_mesh_strips(self, surf, processed_obj)
-
-        if not mesh_strips:
-            return [], [], [], []
-
-        verts = []
-        indices = []
-        uvs = []
-        normals = []
-
-        if surf_id == 0:
-            for v in surf.v_buf:
-                if TargetGame.gameId == GameTarget_Enum.NMH1:
-                    vertPos = Vec3((v.x / pow(2, processed_obj.obj.v_divisor)) * 0.1,
-                                   (v.y / pow(2, processed_obj.obj.v_divisor)) * 0.1,
-                                   (v.z / pow(2, processed_obj.obj.v_divisor)) * 0.1)
-                elif TargetGame.gameId == GameTarget_Enum.NMH2:
-                    vertPos = Vec3(v.x * 0.1, v.y * 0.1, v.z * 0.1)
-                else:
-                    return [], [], [], []
-
-                verts.append(vertPos)
-
-        for idx in mesh_strips:
-            normals.append(idx.n)
-            uvs.append(tuple((idx.u / pow(2, 10), -(idx.v / pow(2, 10)) + 1)))
-
-        valid_idx_count = 0
-        for iii in range(len(mesh_strips) - 2):
-            valid_idx_count += 1
-            if valid_idx_count >= 4:
-                valid_idx_count = 1
-
-            if valid_idx_count == 1:
-                va = mesh_strips[iii].i + 1
-                vb = mesh_strips[iii + 1].i + 1
-                vc = mesh_strips[iii + 2].i + 1
-
-                indices.append(tuple((va, vb, vc)))
-
-        return verts, indices, uvs, normals"""
