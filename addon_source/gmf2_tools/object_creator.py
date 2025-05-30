@@ -191,7 +191,6 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
             bm.to_mesh(mesh)
 
         bm.verts.ensure_lookup_table()
-
         uv_layer = bm.loops.layers.uv.verify()
 
         iteration = 0

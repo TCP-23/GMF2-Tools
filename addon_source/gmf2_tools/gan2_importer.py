@@ -6,6 +6,7 @@ from .target_game import GameTarget_Enum
 from .target_game import TargetGame
 
 from .gan2 import Gan2
+from .action_creator import GA2ActionCreator
 
 class ProcessedAnimObject:
     obj = None
@@ -31,3 +32,11 @@ class GA2AnimImporter(Operator):
 
     def load_file_data(self, context, filepath):
         ga2: Gan2 = Gan2.from_file(filepath)
+
+        anim_name = str(filepath).split('\\')[len(str(filepath).split('\\'))-1].split('.')[0]
+
+        # Remember to unscale the framerate before exporting
+        end_frame = int(ga2.anim_time / 1000 * bpy.context.scene.render.fps)
+        bpy.data.scenes["Scene"].frame_end = end_frame
+
+        GA2ActionCreator.create_action(self, context, end_frame, anim_name)
