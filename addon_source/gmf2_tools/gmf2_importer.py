@@ -111,11 +111,11 @@ class GM2ModelImporter(Operator):
             if len(bones) > 0:
                 obj_armature = GM2ModelImporter.import_bones(self, context, bones)
             if len(objects) > 0:
-                GM2ModelImporter.import_objects(self, context, objects)
+                GM2ModelImporter.import_objects(self, context, objects, obj_armature)
 
         GM2ModelImporter.cleanup_imported(self, context, objects, obj_armature)
 
-    def import_objects(self, context, objects):
+    def import_objects(self, context, objects, obj_arm):
         for processed_obj in objects:
             if processed_obj.obj.surfaces is not None:
                 obj_data = [[], [], [], [], [], []]
@@ -129,7 +129,7 @@ class GM2ModelImporter(Operator):
                     obj_data[3] += surf_norms
                     obj_data[5].append(surf.off_material)
 
-                new_mesh = GM2ObjectCreator.create_mesh(self, context, processed_obj, obj_data)
+                new_mesh = GM2ObjectCreator.create_mesh(self, context, processed_obj, obj_data, obj_arm)
                 GM2ModelImporter.obj_list[processed_obj.obj] = new_mesh
 
                 if processed_obj.parent_obj is not None:

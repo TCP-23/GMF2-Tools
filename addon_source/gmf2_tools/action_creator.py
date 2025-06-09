@@ -11,3 +11,14 @@ class GA2ActionCreator(Operator):
 
         context.active_object.animation_data_create()
         context.active_object.animation_data.action = new_action
+
+        new_action.frame_end = end_frame
+
+    def insert_keyframes(self, context):
+        pass
+
+    def insert_channel(self, context):
+        pass
+
+    def set_interpolation(self, context):
+        pass

@@ -48,7 +48,7 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
 
         return new_obj
 
-    def create_mesh(self, context, objData, processedData):
+    def create_mesh(self, context, objData, processedData, obj_arm):
         obj_mesh = bpy.data.meshes.new(objData.obj.name)
         new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
 
@@ -74,7 +74,10 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
             GM2ObjectCreator.apply_materials(self, new_obj, objData.obj, GCTTextureHandler.mat_list)
 
         GM2ObjectCreator.create_mesh_vertices(self, new_obj, processedData[0])
-        GM2ObjectCreator.create_skinned_partitions(self, context, new_obj, processedData[1])
+        if obj_arm is not None:
+            GM2ObjectCreator.create_skinned_partitions(self, context, new_obj, obj_arm, processedData[1])
+        else:
+            GM2ObjectCreator.create_weight_partitions(self, context, new_obj, processedData[1])
         GM2ObjectCreator.create_mesh_faces(self, context, new_obj, processedData[1], processedData[2], processedData[3], processedData[5])
 
         new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
@@ -115,7 +118,7 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
             bm.to_mesh(mesh)
         # No need to return anything, because we directly modify the mesh data block
 
-    def create_skinned_partitions(self, context, obj, idxs):
+    def create_weight_partitions(self, context, obj, idxs):
         bpy.ops.object.mode_set(mode="OBJECT")
         mesh = obj.data
 
@@ -140,6 +143,12 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
                 mesh.vertices[idx[0] - 1].select = False
                 mesh.vertices[idx[1] - 1].select = False
                 mesh.vertices[idx[2] - 1].select = False
+
+    def create_skinned_partitions(self, context, obj, arm, idxs):
+        GM2ObjectCreator.create_weight_partitions(self, context, obj, idxs)
+
+        armMod = obj.modifiers.new(name="Armature", type="ARMATURE")
+        armMod.object = arm
 
     def create_mesh_faces(self, context, obj, idxs, uvs, norms, mat_index):
         bpy.ops.object.mode_set(mode="OBJECT")
