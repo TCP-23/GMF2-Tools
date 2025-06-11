@@ -19,6 +19,7 @@ def menu_func_import(self, context):
     #self.layout.operator(RMHG_Setup.bl_idname, text="Grasshopper Manufacture Archive (.rsl)")
 
 
+# Registers all operators to Blender
 def register():
     bpy.utils.register_class(GMF2_Setup)
     bpy.utils.register_class(FLCG_Setup)
@@ -31,6 +32,7 @@ def register():
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 
+# Unregisters all operators from Blender
 def unregister():
     bpy.utils.unregister_class(GMF2_Setup)
     bpy.utils.unregister_class(FLCG_Setup)

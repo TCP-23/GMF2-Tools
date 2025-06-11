@@ -8,6 +8,7 @@ from .target_game import TargetGame
 from .gan2 import Gan2
 from .action_creator import GA2ActionCreator
 
+# currently unused
 class ProcessedAnimObject:
     obj = None
     parent_obj = None
@@ -31,12 +32,16 @@ class GA2AnimImporter(Operator):
     # print((-90 * pow(2, 5)) * 10)
 
     def load_file_data(self, context, filepath):
+        # Read the data from the GA2 file, and create a variable to hold it
         ga2: Gan2 = Gan2.from_file(filepath)
 
+        # Get the animation name from the filepath
         anim_name = str(filepath).split('\\')[len(str(filepath).split('\\'))-1].split('.')[0]
 
+        # Scale the animation end frame based on the framerate of the Blender scene
         # Remember to unscale the framerate before exporting
         end_frame = int(ga2.anim_time / 1000 * bpy.context.scene.render.fps)
         bpy.data.scenes["Scene"].frame_end = end_frame
 
+        # Create a Blender action using the anim data
         GA2ActionCreator.create_action(self, context, end_frame, anim_name)

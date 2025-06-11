@@ -8,6 +8,7 @@ CMPR_BLOCK_SIZE = 8
 CMPR_SUBBLOCK_SIZE = 4
 
 
+# Convert a RGB565 color
 def rgb565_to_RGB(colorData):
     r = (colorData >> 11) & 31
     g = (colorData >> 5) & 63
@@ -79,6 +80,7 @@ def cmpr_texture_testing(gct0_data):
     return decompressed_data
 
 
+# Returns a list of pixels using provided RGB5A3 texture data
 def load_rgb5a3_texture(gct0_data):
     pixel_list = []
 
@@ -114,19 +116,12 @@ def load_rgb5a3_texture(gct0_data):
     return pixel_list
 
 
+# Returns a list of pixels using provided CMPR texture data
 def load_cmpr_texture(gct0_data):
     pixel_list = []
 
     texture_data = cmpr_texture_testing(gct0_data)
     for pix in texture_data:
-        """try:
-            pixel_list.append(pix[0] / 255)
-            pixel_list.append(pix[1] / 255)
-            pixel_list.append(pix[2] / 255)
-            pixel_list.append(pix[3] / 255)
-        except TypeError:
-            print(pix)
-            return None"""
         pixel_list.append(pix / 255)
 
     return pixel_list
@@ -142,27 +137,38 @@ class GCTTextureHandler(Operator):
         for i, tex in enumerate(textures):
             new_btex = None
             if tex.gct0_texture.encoding != Gct0.TextureEncoding.rgba32:
+                # Check if the texture data is embedded in the model file
                 if "No File" not in str(tex.gct0_texture.texture_data):
+                    # If it is embedded, create a new Blender texture using the data
                     new_btex = GCTTextureHandler.create_internal_texture(self, tex)
                 else:
+                    # If it is not embedded, create a placeholder texture in its place
                     new_btex = GCTTextureHandler.create_empty_texture(self, tex.name)
 
+            # If the texture doesn't exist, replace it with the fallback texture
             if new_btex is None:
                 new_btex = GCTTextureHandler.get_fallback_texture(self)
 
+            # Add the texture to the texture list
             GCTTextureHandler.tex_list[tex.offset] = new_btex
 
     def import_materials(self, context, materials):
         for i, mat in enumerate(materials):
+            # Check if the material data has a valid texture
             if mat.data.off_texture != 0:
                 new_mat = GCTTextureHandler.create_material(self, mat, GCTTextureHandler.tex_list[mat.data.off_texture])
             else:
+                # Create a material using a fallback texture
                 new_mat = GCTTextureHandler.create_material(self, mat, GCTTextureHandler.get_fallback_texture(self))
+
+            # Add the new material to the material list
             GCTTextureHandler.mat_list[mat.offset] = new_mat
 
+    # Unused
     def export_textures(self, context):
         pass
 
+    # Creates a default texture
     def create_empty_texture(self, tex_name):
         default_color_1 = [0.945, 0.851, 0.753, 1]
         default_color_2 = [0.356, 0.159, 0.102, 1]
@@ -189,10 +195,12 @@ class GCTTextureHandler(Operator):
 
         return btex
 
+    # Returns the default fallback texture
     def get_fallback_texture(self):
-        if not bpy.data.textures.get("FALLBACK_TEX"):
+        # Check if the fallback texture has already been created
+        if not bpy.data.textures.get("FALLBACK_TEX"): # If it doesn't exist, create it
             btex = GCTTextureHandler.create_empty_texture(self, "FALLBACK_TEX")
-        else:
+        else: # If it has been created, just get it
             btex = bpy.data.textures.get("FALLBACK_TEX")
 
         return btex

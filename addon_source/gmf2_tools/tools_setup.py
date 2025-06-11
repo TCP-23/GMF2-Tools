@@ -51,7 +51,7 @@ class GMF2_Setup(Operator, ImportHelper):
 
     import_models: BoolProperty(
         name="Import Models & Armatures",
-        description="Turn this off if you just want the textures",
+        description="Turn this off if you just want to load the textures into Blender",
         default=True
     )
 

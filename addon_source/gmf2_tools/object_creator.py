@@ -224,6 +224,7 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         bm.free()
         mesh.update()
 
+    # Applies stored normals to a mesh
     def apply_normals(self, mesh):
         normals = []
 

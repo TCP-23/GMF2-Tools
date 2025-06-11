@@ -13,6 +13,7 @@ from .gct0_handler import GCTTextureHandler
 Vec3 = namedtuple("Vec3", "x y z")
 Gm2Idx = namedtuple("Gm2Idx", "i u v n")
 
+# Used to keep links from the GM2 file when imported into Blender
 class ProcessedObject:
     obj = None
     parent_obj = None
@@ -28,15 +29,18 @@ class ProcessedObject:
         self.next_obj = _next_obj
 
 
+# Sorts objects based on their data types, and creates lists of the objects
 def sort_objects(objs):
     sorted_objs = []
     sorted_bones = []
 
     bone_world_objects = []
 
+    # Loop through every object inside the provided list
     for i, world_object in objs.items():
         parent, first_child, prev_obj, next_obj = None, None, None, None
 
+        # Get references to linked objects
         if world_object.off_parent in objs:
             parent = objs[world_object.off_parent]
         if world_object.off_first_child in objs:
@@ -46,7 +50,10 @@ def sort_objects(objs):
         if world_object.off_next in objs:
             next_obj = objs[world_object.off_next]
 
+        # Create a ProcessedObject
         processed_obj = ProcessedObject(world_object, parent, first_child, prev_obj, next_obj)
+
+        # Add the ProcessedObject to the appropriate list based on object type
         if processed_obj.obj.name == "ROOT" and processed_obj.obj.surfaces is None:
             processed_obj.obj.isBone = True
             sorted_bones.append(processed_obj)
@@ -84,20 +91,27 @@ class GM2ModelImporter(Operator):
     temp_arm_list = {}
 
     def load_file_data(self, context, filepath):
+        # Manually clear the object and junk object lists
+        # Have to do this because Blender doesn't automatically clear them, otherwise the addon would break if you tried
+        # to import multiple objects
         GM2ModelImporter.obj_list.clear()
         GM2ModelImporter.junk_objs.clear()
 
+        # Read the data from the GM2 file, and create a variable to hold it
         gm2: Gmf2 = Gmf2.from_file(filepath)
 
+        # Detect the game the file is from (find a better way to do this)
         if gm2.game_identifier == 4294967295 or gm2.game_identifier == 8:
             TargetGame.gameId = GameTarget_Enum.NMH2
         else:
             TargetGame.gameId = GameTarget_Enum.NMH1
 
+        # Get a list of all the objects in the file
         unsorted_objects = {}
         for i, world_object in enumerate(gm2.world_objects):
             unsorted_objects[world_object.offset] = world_object
 
+        # Sort all of the objects based on their type
         objects, bones = sort_objects(unsorted_objects)
         obj_armature = None
 
@@ -117,8 +131,9 @@ class GM2ModelImporter(Operator):
 
     def import_objects(self, context, objects, obj_arm):
         for processed_obj in objects:
-            if processed_obj.obj.surfaces is not None:
-                obj_data = [[], [], [], [], [], []]
+            # Check if the object has surfaces
+            if processed_obj.obj.surfaces is not None: # If so, get the mesh data from the surfaces
+                obj_data = [[], [], [], [], [], []] # vertices, indices, uvs, normals, unused (for now), material offset
 
                 obj_data[0] += GM2ModelImporter.get_surface_verts(self, processed_obj, processed_obj.obj.surfaces[0])
                 for surf in processed_obj.obj.surfaces:
@@ -129,30 +144,39 @@ class GM2ModelImporter(Operator):
                     obj_data[3] += surf_norms
                     obj_data[5].append(surf.off_material)
 
+                # Create a mesh using the mesh data
                 new_mesh = GM2ObjectCreator.create_mesh(self, context, processed_obj, obj_data, obj_arm)
+
+                # Add the mesh to the object list
                 GM2ModelImporter.obj_list[processed_obj.obj] = new_mesh
 
+                # Set the object's parent
                 if processed_obj.parent_obj is not None:
                     new_mesh.parent = GM2ModelImporter.obj_list[processed_obj.parent_obj]
 
+                # If the object has normals, apply them
                 if len(GM2ObjectCreator.normals) > 0:
                     GM2ObjectCreator.apply_normals(self, new_mesh.data)
-            else:
+            else: # If the object has no surfaces, create an empty object
                 new_obj = GM2ObjectCreator.create_object(self, context, processed_obj, self.up_axis)
                 GM2ModelImporter.obj_list[processed_obj.obj] = new_obj
 
+                # Set the object's parent
                 if processed_obj.parent_obj is not None:
                     new_obj.parent = GM2ModelImporter.obj_list[processed_obj.parent_obj]
 
     def get_surface_verts(self, processed_obj, surf):
+        # Get the mesh strips from the surface
         mesh_strips = GM2ModelImporter.get_mesh_strips(self, surf, processed_obj)
 
+        # If the surface has no strips, return empty
         if not mesh_strips:
             return []
 
         verts = []
 
         for v in surf.v_buf:
+            # Check the game ID
             if TargetGame.gameId == GameTarget_Enum.NMH1:
                 try:
                     vertPos = Vec3((v.x / pow(2, processed_obj.obj.v_divisor)) * 0.1,
@@ -166,16 +190,19 @@ class GM2ModelImporter(Operator):
                     return []
             elif TargetGame.gameId == GameTarget_Enum.NMH2:
                 vertPos = Vec3(v.x * 0.1, v.y * 0.1, v.z * 0.1)
-            else:
+            else: # If the game ID isn't recognized, return empty
                 return []
 
             verts.append(vertPos)
 
         return verts
 
+    # Returns the mesh data of a surface (indices, uvs, normals)
     def get_surface_data(self, processed_obj, surf):
+        # Get the mesh strips of a surface
         mesh_strips = GM2ModelImporter.get_mesh_strips(self, surf, processed_obj)
 
+        # If the surface has no strips, return empty
         if not mesh_strips:
             return [], [], []
 
@@ -183,6 +210,7 @@ class GM2ModelImporter(Operator):
         uvs = []
         normals = []
 
+        # Loop through every data bit in the strips
         for idx in mesh_strips:
             normals.append(idx.n)
             uvs.append(tuple((idx.u / pow(2, 10), -(idx.v / pow(2, 10)) + 1)))
@@ -208,6 +236,7 @@ class GM2ModelImporter(Operator):
 
         combined_armature = None
 
+        # Set the display model of the bones
         if not self.display_tails:
             bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1)
             bone_model = bpy.context.active_object
@@ -221,51 +250,66 @@ class GM2ModelImporter(Operator):
                 new_bone.parent = GM2ModelImporter.obj_list[bone.parent_obj]
                 new_bone.parent = GM2ModelImporter.junk_objs[bone.parent_obj]
 
+            # Create a temporary armature for all the bones
             temp_arm = GM2ObjectCreator.create_bone(self, context, bone, new_bone)
+
+            # Append the temporary armature to a list
             GM2ModelImporter.temp_arm_list[temp_arm.name] = temp_arm
 
+        # Deselect all selected objects
         for obj in context.selected_objects:
             obj.select_set(False)
 
+        # Select all of the temporary armatures
         for j, arm_obj in GM2ModelImporter.temp_arm_list.items():
             root_key = j
             arm_obj.select_set(True)
 
+        # Combine all the armatures into one object
         context.view_layer.objects.active = GM2ModelImporter.temp_arm_list[root_key]
         bpy.ops.object.join()
 
+        # Initialize the combined armature
         combined_armature = context.view_layer.objects.active
         combined_armature.name = "ROOT_armature"
         bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
 
+        # Switch to edit mode
         if context.active_object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
 
+        # Link all the bones to their parents
         all_bones = context.view_layer.objects.active.data.edit_bones
         for bone in bones:
             if bone.parent_obj is not None:
                 all_bones[bone.obj.name].parent = all_bones[bone.parent_obj.name]
 
+        # Manually clear the temporary armature list
         GM2ModelImporter.temp_arm_list = {}
         bpy.ops.object.mode_set(mode="OBJECT")
 
         if not self.display_tails:
             pose_bones = bpy.context.object.pose.bones
 
+            # Apply the display model to the bones
             for bone in pose_bones:
                 bone.custom_shape = bone_model
                 bone.custom_shape_scale_xyz = tuple((0.005, 0.005, 0.005))
                 bone.use_custom_shape_bone_size = False
 
+            # Switch to object mode
             bpy.ops.object.mode_set(mode="OBJECT")
 
+            # Delete the sphere bone model
             bpy.ops.object.select_all(action='DESELECT')
             bpy.data.objects[bone_model.name].select_set(True)
             bpy.ops.object.delete(use_global=False, confirm=False)
 
         return combined_armature
 
+    # Cleans up Blender by deleting unneeded assets
     def cleanup_imported(self, context, process_obj_list, root_armature):
+        # Deselect everything
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.select_all(action='DESELECT')
 
@@ -282,6 +326,7 @@ class GM2ModelImporter(Operator):
 
                     bpy.data.objects[GM2ModelImporter.obj_list[obj.obj].name].select_set(False)
 
+            # Clear the junk object list
             for junk_obj in GM2ModelImporter.junk_objs:
                 GM2ModelImporter.junk_objs[junk_obj].data.user_clear()
                 bpy.data.objects[junk_obj.name].select_set(True)

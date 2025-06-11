@@ -6,6 +6,7 @@ class GA2ActionCreator(Operator):
     bl_idname = "gm2_importer.action_creator"
     bl_label = "Create GAN2 Action"
 
+    # Creates Blender actions from provided GA2 data
     def create_action(self, context, end_frame, anim_name):
         new_action = bpy.data.actions.new(anim_name)
 
