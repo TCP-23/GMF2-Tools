@@ -23,6 +23,13 @@ class ProcessedAnimObject:
         self.prev_obj = _prev_obj
         self.next_obj = _next_obj
 
+# Returns the name of an animation based on its filepath
+def get_anim_name(anim_path):
+    # TODO: Check operating system
+    # The following code only works for Windows systems
+    anim_name = str(anim_path).split('\\')[len(str(anim_path).split('\\'))-1].split('.')[0]
+    return anim_name
+
 class GA2AnimImporter(Operator):
     bl_idname = "ga2_importer.anim_data"
     bl_label = "Import GAN2 animation"
@@ -36,7 +43,7 @@ class GA2AnimImporter(Operator):
         ga2: Gan2 = Gan2.from_file(filepath)
 
         # Get the animation name from the filepath
-        anim_name = str(filepath).split('\\')[len(str(filepath).split('\\'))-1].split('.')[0]
+        anim_name = get_anim_name(filepath)
 
         # Scale the animation end frame based on the framerate of the Blender scene
         # Remember to unscale the framerate before exporting

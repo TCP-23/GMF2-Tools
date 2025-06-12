@@ -38,17 +38,6 @@ class GMF2_Setup(Operator, ImportHelper):
         default='OPT_B'
     )
 
-    """data_import: EnumProperty(
-        name="Data Import Type",
-        description="",
-        items=(
-            ('OPT_A', "Everything", ""),
-            ('OPT_B', "Models & Textures", ""),
-            ('OPT_C', "Models Only", ""),
-            ('OPT_D', "Textures Only", ""),
-        )
-    )"""
-
     import_models: BoolProperty(
         name="Import Models & Armatures",
         description="Turn this off if you just want to load the textures into Blender",

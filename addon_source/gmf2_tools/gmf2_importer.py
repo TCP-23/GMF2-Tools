@@ -111,7 +111,7 @@ class GM2ModelImporter(Operator):
         for i, world_object in enumerate(gm2.world_objects):
             unsorted_objects[world_object.offset] = world_object
 
-        # Sort all of the objects based on their type
+        # Sort all the objects based on their type
         objects, bones = sort_objects(unsorted_objects)
         obj_armature = None
 
@@ -236,13 +236,15 @@ class GM2ModelImporter(Operator):
 
         combined_armature = None
 
-        # Set the display model of the bones
+        # Create a sphere, and grab its mesh. Later, we will use this model as the display model for the bones.
         if not self.display_tails:
             bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1)
             bone_model = bpy.context.active_object
 
         for i, bone in enumerate(bones):
             new_bone = GM2ObjectCreator.create_object(self, context, bone, self.up_axis)
+
+            # Append the bone to the object and junk object lists
             GM2ModelImporter.junk_objs[bone.obj] = new_bone
             GM2ModelImporter.obj_list[bone.obj] = new_bone
 
@@ -348,7 +350,7 @@ class GM2ModelImporter(Operator):
             idxs = []
             match command:
                 case 0x96:
-                    # unknown what this does, appears in some models
+                    # unknown what this means, appears in some models
                     return []
                 case 0x99:
                     for _ in range(num_idx):
