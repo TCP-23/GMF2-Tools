@@ -30,6 +30,29 @@ def get_anim_name(anim_path):
     anim_name = str(anim_path).split('\\')[len(str(anim_path).split('\\'))-1].split('.')[0]
     return anim_name
 
+def sort_objects(objs):
+    sorted_objs = []
+
+    # Loop through every object inside the provided list
+    for i, anim_object in objs.items():
+        parent, first_child, prev_obj, next_obj = None, None, None, None
+
+        # Get references to linked objects
+        if anim_object.off_parent in objs:
+            parent = objs[anim_object.off_parent]
+        if anim_object.off_first_child in objs:
+            first_child = objs[anim_object.off_first_child]
+        if anim_object.off_prev in objs:
+            prev_obj = objs[anim_object.off_prev]
+        if anim_object.off_next in objs:
+            next_obj = objs[anim_object.off_next]
+
+        # Create a ProcessedObject
+        processed_obj = ProcessedAnimObject(anim_object, parent, first_child, prev_obj, next_obj)
+        sorted_objs.append(processed_obj)
+
+    return sorted_objs
+
 class GA2AnimImporter(Operator):
     bl_idname = "ga2_importer.anim_data"
     bl_label = "Import GAN2 animation"
@@ -42,6 +65,13 @@ class GA2AnimImporter(Operator):
         # Read the data from the GA2 file, and create a variable to hold it
         ga2: Gan2 = Gan2.from_file(filepath)
 
+        unsorted_objects = {}
+        for i, anim_object in enumerate(ga2.anim_objects):
+            unsorted_objects[anim_object.data_offset] = anim_object
+
+        objects = sort_objects(unsorted_objects)
+        obj_armature = None
+
         # Get the animation name from the filepath
         anim_name = get_anim_name(filepath)
 
@@ -51,4 +81,4 @@ class GA2AnimImporter(Operator):
         bpy.data.scenes["Scene"].frame_end = end_frame
 
         # Create a Blender action using the anim data
-        GA2ActionCreator.create_action(self, context, end_frame, anim_name)
+        GA2ActionCreator.create_action(self, context, end_frame, anim_name, objects)
