@@ -84,6 +84,23 @@ class GAN2_Setup(Operator, ImportHelper):
 
     filter_glob: StringProperty(default="*.ga2", options={'HIDDEN'})
 
+    up_axis: EnumProperty(
+        name="Up Axis",
+        description="The up axis of the animation you are trying to import. \nMess with this if your animation imports in the wrong orientation.\n",
+        items=(
+            ('OPT_A', "X", ""),
+            ('OPT_B', "Y", ""),
+            ('OPT_C', "Z", ""),
+        ),
+        default='OPT_B'
+    )
+
+    trim_repeat: BoolProperty(
+        name="Trim Looping Animation",
+        description="If an animation has a built-in loop (repeat keyframes), trim the animation so it only contains one set",
+        default=False
+    )
+
     def start_plugin(self, context, filepath):
         GA2AnimImporter.load_file_data(self, context, filepath)
 

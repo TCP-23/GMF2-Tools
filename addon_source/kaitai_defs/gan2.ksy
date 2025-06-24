@@ -159,38 +159,32 @@ types:
       pos_x_block:
         io: _root._io
         pos: pos_x_off
-        type: anim_pos_block(pos_x_off)
-        #size: len_data
+        type: anim_data_block(pos_x_off)
       pos_y_block:
         io: _root._io
         pos: pos_y_off
-        type: anim_pos_block(pos_y_off)
-        #size: len_data
+        type: anim_data_block(pos_y_off)
       pos_z_block:
         io: _root._io
-        pos: pos_y_off
-        type: anim_pos_block(pos_z_off)
-        #size: len_data
+        pos: pos_z_off
+        type: anim_data_block(pos_z_off)
       rot_x_block:
         io: _root._io
         pos: rot_x_off
-        type: anim_rot_block(rot_x_off)
+        type: anim_data_block(rot_x_off)
         if: block_count == 6
-        #size: len_data
       rot_y_block:
         io: _root._io
         pos: rot_y_off
-        type: anim_rot_block(rot_y_off)
+        type: anim_data_block(rot_y_off)
         if: block_count == 6
-        #size: len_data
       rot_z_block:
         io: _root._io
         pos: rot_z_off
-        type: anim_rot_block(rot_z_off)
+        type: anim_data_block(rot_z_off)
         if: block_count == 6
-        #size: len_data
         
-  anim_pos_block:
+  anim_data_block:
     params:
       - id: data_off
         type: u4
@@ -207,7 +201,7 @@ types:
         
       - contents: [0, 0, 0, 0]
       
-      - id: unk_3
+      - id: v_divisor
         type: u1
         
       - id: unk_4
@@ -220,56 +214,7 @@ types:
         type: s2le
         repeat: expr
         repeat-expr: data_pair_count
-        if: unk_3 == 5
         
       - id: unk_line_ending
         type: u2le
-        if: unk_3 == 5
-        
-      - id: timing_pairs # Unsure, but times seem to alternate sequence; if they were ignored, count could be correct.
-        type: u2le
-        repeat: expr
-        repeat-expr: data_pair_count * 2
-        if: unk_3 == 4
-        
-  anim_rot_block:
-    params:
-      - id: data_off
-        type: u4
-    seq:
-      - id: unk_1 # Always 1?
-        type: u2le
-      - id: block_id
-        type: u2le
-      
-      - contents: [0, 0, 0, 0]
-      
-      - id: block_data_off
-        type: u4le
-        
-      - contents: [0, 0, 0, 0]
-      
-      - id: unk_3
-        type: u1
-        
-      - id: unk_4
-        type: u1
-        
-      - id: data_pair_count # The number of data pairs?
-        type: u2le
-        
-      - id: data_pairs
-        type: s2le
-        repeat: expr
-        repeat-expr: data_pair_count
-        if: unk_3 == 5
-        
-      - id: unk_line_ending
-        type: u2le
-        if: unk_3 == 5
-        
-      - id: timing_pairs # Unsure, but times seem to alternate sequence; if they were ignored, count could be correct.
-        type: u2le
-        repeat: expr
-        repeat-expr: data_pair_count * 2
-        if: unk_3 == 4
+        if: v_divisor == 5

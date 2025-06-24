@@ -39,44 +39,6 @@ class Gan2(KaitaiStruct):
             self.anim_objects.append(Gan2.AnimObject(self._io, self, self._root))
 
 
-    class AnimRotBlock(KaitaiStruct):
-        def __init__(self, data_off, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self.data_off = data_off
-            self._read()
-
-        def _read(self):
-            self.unk_1 = self._io.read_u2le()
-            self.block_id = self._io.read_u2le()
-            self._unnamed2 = self._io.read_bytes(4)
-            if not self._unnamed2 == b"\x00\x00\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed2, self._io, u"/types/anim_rot_block/seq/2")
-            self.block_data_off = self._io.read_u4le()
-            self._unnamed4 = self._io.read_bytes(4)
-            if not self._unnamed4 == b"\x00\x00\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed4, self._io, u"/types/anim_rot_block/seq/4")
-            self.unk_3 = self._io.read_u1()
-            self.unk_4 = self._io.read_u1()
-            self.data_pair_count = self._io.read_u2le()
-            if self.unk_3 == 5:
-                self.data_pairs = []
-                for i in range(self.data_pair_count):
-                    self.data_pairs.append(self._io.read_s2le())
-
-
-            if self.unk_3 == 5:
-                self.unk_line_ending = self._io.read_u2le()
-
-            if self.unk_3 == 4:
-                self.timing_pairs = []
-                for i in range((self.data_pair_count * 2)):
-                    self.timing_pairs.append(self._io.read_u2le())
-
-
-
-
     class U1Vector(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -88,44 +50,6 @@ class Gan2(KaitaiStruct):
             self.x = self._io.read_u1()
             self.y = self._io.read_u1()
             self.z = self._io.read_u1()
-
-
-    class AnimPosBlock(KaitaiStruct):
-        def __init__(self, data_off, _io, _parent=None, _root=None):
-            self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self.data_off = data_off
-            self._read()
-
-        def _read(self):
-            self.unk_1 = self._io.read_u2le()
-            self.block_id = self._io.read_u2le()
-            self._unnamed2 = self._io.read_bytes(4)
-            if not self._unnamed2 == b"\x00\x00\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed2, self._io, u"/types/anim_pos_block/seq/2")
-            self.block_data_off = self._io.read_u4le()
-            self._unnamed4 = self._io.read_bytes(4)
-            if not self._unnamed4 == b"\x00\x00\x00\x00":
-                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed4, self._io, u"/types/anim_pos_block/seq/4")
-            self.unk_3 = self._io.read_u1()
-            self.unk_4 = self._io.read_u1()
-            self.data_pair_count = self._io.read_u2le()
-            if self.unk_3 == 5:
-                self.data_pairs = []
-                for i in range(self.data_pair_count):
-                    self.data_pairs.append(self._io.read_s2le())
-
-
-            if self.unk_3 == 5:
-                self.unk_line_ending = self._io.read_u2le()
-
-            if self.unk_3 == 4:
-                self.timing_pairs = []
-                for i in range((self.data_pair_count * 2)):
-                    self.timing_pairs.append(self._io.read_u2le())
-
-
 
 
     class FlVectorBe(KaitaiStruct):
@@ -181,6 +105,36 @@ class Gan2(KaitaiStruct):
             self.z = self._io.read_s2be()
 
 
+    class AnimDataBlock(KaitaiStruct):
+        def __init__(self, data_off, _io, _parent=None, _root=None):
+            self._io = _io
+            self._parent = _parent
+            self._root = _root if _root else self
+            self.data_off = data_off
+            self._read()
+
+        def _read(self):
+            self.unk_1 = self._io.read_u2le()
+            self.block_id = self._io.read_u2le()
+            self._unnamed2 = self._io.read_bytes(4)
+            if not self._unnamed2 == b"\x00\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed2, self._io, u"/types/anim_data_block/seq/2")
+            self.block_data_off = self._io.read_u4le()
+            self._unnamed4 = self._io.read_bytes(4)
+            if not self._unnamed4 == b"\x00\x00\x00\x00":
+                raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed4, self._io, u"/types/anim_data_block/seq/4")
+            self.v_divisor = self._io.read_u1()
+            self.unk_4 = self._io.read_u1()
+            self.data_pair_count = self._io.read_u2le()
+            self.data_pairs = []
+            for i in range(self.data_pair_count):
+                self.data_pairs.append(self._io.read_s2le())
+
+            if self.v_divisor == 5:
+                self.unk_line_ending = self._io.read_u2le()
+
+
+
     class AnimData(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -229,7 +183,7 @@ class Gan2(KaitaiStruct):
                 io = self._root._io
                 _pos = io.pos()
                 io.seek(self.rot_y_off)
-                self._m_rot_y_block = Gan2.AnimRotBlock(self.rot_y_off, io, self, self._root)
+                self._m_rot_y_block = Gan2.AnimDataBlock(self.rot_y_off, io, self, self._root)
                 io.seek(_pos)
 
             return getattr(self, '_m_rot_y_block', None)
@@ -243,7 +197,7 @@ class Gan2(KaitaiStruct):
                 io = self._root._io
                 _pos = io.pos()
                 io.seek(self.rot_z_off)
-                self._m_rot_z_block = Gan2.AnimRotBlock(self.rot_z_off, io, self, self._root)
+                self._m_rot_z_block = Gan2.AnimDataBlock(self.rot_z_off, io, self, self._root)
                 io.seek(_pos)
 
             return getattr(self, '_m_rot_z_block', None)
@@ -256,7 +210,7 @@ class Gan2(KaitaiStruct):
             io = self._root._io
             _pos = io.pos()
             io.seek(self.pos_y_off)
-            self._m_pos_y_block = Gan2.AnimPosBlock(self.pos_y_off, io, self, self._root)
+            self._m_pos_y_block = Gan2.AnimDataBlock(self.pos_y_off, io, self, self._root)
             io.seek(_pos)
             return getattr(self, '_m_pos_y_block', None)
 
@@ -267,8 +221,8 @@ class Gan2(KaitaiStruct):
 
             io = self._root._io
             _pos = io.pos()
-            io.seek(self.pos_y_off)
-            self._m_pos_z_block = Gan2.AnimPosBlock(self.pos_z_off, io, self, self._root)
+            io.seek(self.pos_z_off)
+            self._m_pos_z_block = Gan2.AnimDataBlock(self.pos_z_off, io, self, self._root)
             io.seek(_pos)
             return getattr(self, '_m_pos_z_block', None)
 
@@ -280,7 +234,7 @@ class Gan2(KaitaiStruct):
             io = self._root._io
             _pos = io.pos()
             io.seek(self.pos_x_off)
-            self._m_pos_x_block = Gan2.AnimPosBlock(self.pos_x_off, io, self, self._root)
+            self._m_pos_x_block = Gan2.AnimDataBlock(self.pos_x_off, io, self, self._root)
             io.seek(_pos)
             return getattr(self, '_m_pos_x_block', None)
 
@@ -293,7 +247,7 @@ class Gan2(KaitaiStruct):
                 io = self._root._io
                 _pos = io.pos()
                 io.seek(self.rot_x_off)
-                self._m_rot_x_block = Gan2.AnimRotBlock(self.rot_x_off, io, self, self._root)
+                self._m_rot_x_block = Gan2.AnimDataBlock(self.rot_x_off, io, self, self._root)
                 io.seek(_pos)
 
             return getattr(self, '_m_rot_x_block', None)
