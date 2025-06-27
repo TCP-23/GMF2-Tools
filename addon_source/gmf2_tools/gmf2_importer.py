@@ -286,9 +286,19 @@ class GM2ModelImporter(Operator):
             if bone.parent_obj is not None:
                 all_bones[bone.obj.name].parent = all_bones[bone.parent_obj.name]
 
+        # Switch to pose mode
+        bpy.ops.object.mode_set(mode="POSE")
+
+        # Set all pose bones on the armature to use Euler XYZ rotation
+        p_bones = context.view_layer.objects.active.pose.bones
+        for p_bone in p_bones:
+            p_bone.rotation_mode = 'XYZ'
+
+        # Switch to object mode
+        bpy.ops.object.mode_set(mode="OBJECT")
+
         # Manually clear the temporary armature list
         GM2ModelImporter.temp_arm_list = {}
-        bpy.ops.object.mode_set(mode="OBJECT")
 
         if not self.display_tails:
             pose_bones = bpy.context.object.pose.bones

@@ -3,7 +3,7 @@ import bpy
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 
-from bpy.props import BoolProperty, StringProperty, EnumProperty
+from bpy.props import BoolProperty, StringProperty, EnumProperty, FloatProperty
 
 from .gmf2_importer import GM2ModelImporter
 from .gan2_importer import GA2AnimImporter
@@ -95,9 +95,27 @@ class GAN2_Setup(Operator, ImportHelper):
         default='OPT_B'
     )
 
+    position_scale: FloatProperty(
+        name="Position Scale",
+        description="",
+        default=0.0001
+    )
+
+    rotation_scale: FloatProperty(
+        name="Rotation Scale",
+        description="",
+        default=0.1
+    )
+
     trim_repeat: BoolProperty(
         name="Trim Looping Animation",
         description="If an animation has a built-in loop (repeat keyframes), trim the animation so it only contains one set",
+        default=False
+    )
+
+    axis_swap_children: BoolProperty(
+        name="Axis Swap Children",
+        description="",
         default=False
     )
 
