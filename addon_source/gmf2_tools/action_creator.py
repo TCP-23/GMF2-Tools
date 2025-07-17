@@ -107,6 +107,39 @@ def calculate_block_data_type(anim_data_block):
 
     return data_type
 
+def gan2_rot_to_rad(gan2_rot):
+    unclamped_rad_val = 0
+    clamped_rad_val = 0
+
+    """unclamped_rad_val = (gan2_rot / 66535) * math.tau
+    if unclamped_rad_val < 0:
+        clamped_rad_val = (unclamped_rad_val + math.tau * abs(math.floor(unclamped_rad_val / math.tau)))
+    elif unclamped_rad_val > math.tau:
+        clamped_rad_val = (unclamped_rad_val - math.tau * abs(math.floor(unclamped_rad_val / math.tau)))
+    else:
+        clamped_rad_val = unclamped_rad_val"""
+
+    unclamped_rad_val = ((66535 - gan2_rot) / 32768)
+    #unclamped_rad_val = gan2_rot - 32768
+    clamped_rad_val = unclamped_rad_val
+
+    return clamped_rad_val
+
+def rad_to_gan2_rot(rad_rot):
+    RADIAN_MAX = 2 * math.pi
+
+    return (rad_rot / RADIAN_MAX) * 66535
+
+def gan2_rot_to_deg(gan2_rot):
+    rad_rot = gan2_rot_to_rad(gan2_rot)
+
+    return rad_rot * (180 / math.pi)
+
+def deg_to_gan2_rot(deg_rot):
+    rad_rot = deg_rot * (math.pi / 180)
+
+    return rad_to_gan2_rot(rad_rot)
+
 
 class GA2ActionCreator(Operator):
     bl_idname = "gm2_importer.action_creator"
@@ -121,8 +154,11 @@ class GA2ActionCreator(Operator):
             if anim_obj.parent_obj is not None:
                 if anim_obj.parent_obj.off_parent == 0:
                     is_first_child = True
+            else:
+                print(f"Obj Name: {anim_obj.obj.name}. No parent!")
 
             anim_obj_datas.append(AnimObjInfo(anim_obj.obj, is_first_child))
+            print(f"Obj Name: {anim_obj.obj.name}. Is first child: {is_first_child}")
 
         if context.active_object.mode != "POSE":
             bpy.ops.object.mode_set(mode="POSE")
@@ -239,12 +275,11 @@ class GA2ActionCreator(Operator):
             else:
                 bone.location[converted_chan_index] = 0.0
 
-            #bone.location[converted_chan_index] = (vecData / pow(2, v_div)) * 0.01
-
             bone.keyframe_insert(data_path="location", frame=context.scene.frame_current, index=converted_chan_index)
         elif channel_index <= 5:
             if v_div == 5:
-                bone.rotation_euler[converted_chan_index] = math.radians((vecData / pow(2, v_div)) * self.rotation_scale)
+                #bone.rotation_euler[converted_chan_index] = gan2_rot_to_rad(vecData)
+                bone.rotation_euler[converted_chan_index] = math.radians((vecData / pow(2, v_div)) / math.tau)
             else:
                 bone.rotation_euler[converted_chan_index] = 0.0
             bone.keyframe_insert(data_path="rotation_euler", frame=context.scene.frame_current, index=converted_chan_index)

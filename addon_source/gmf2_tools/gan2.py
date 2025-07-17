@@ -36,7 +36,7 @@ class Gan2(KaitaiStruct):
         self.unk_6 = self._io.read_u4le()
         self.anim_objects = []
         for i in range(self.num_obj):
-            self.anim_objects.append(Gan2.AnimObject(self._io, self, self._root))
+            self.anim_objects.append(Gan2.AnimObject(self._io.pos(), self._io, self, self._root))
 
 
     class U1Vector(KaitaiStruct):
@@ -128,7 +128,19 @@ class Gan2(KaitaiStruct):
             self.data_pair_count = self._io.read_u2le()
             self.data_pairs = []
             for i in range(self.data_pair_count):
-                self.data_pairs.append(self._io.read_s2le())
+                _on = self.block_id
+                if _on == 0:
+                    self.data_pairs.append(self._io.read_s2le())
+                elif _on == 4:
+                    self.data_pairs.append(self._io.read_s2le())
+                elif _on == 1:
+                    self.data_pairs.append(self._io.read_s2le())
+                elif _on == 3:
+                    self.data_pairs.append(self._io.read_s2le())
+                elif _on == 5:
+                    self.data_pairs.append(self._io.read_s2le())
+                elif _on == 2:
+                    self.data_pairs.append(self._io.read_s2le())
 
             if self.v_divisor == 5:
                 self.unk_line_ending = self._io.read_u2le()
@@ -254,10 +266,11 @@ class Gan2(KaitaiStruct):
 
 
     class AnimObject(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
+        def __init__(self, offset, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
             self._root = _root if _root else self
+            self.offset = offset
             self._read()
 
         def _read(self):

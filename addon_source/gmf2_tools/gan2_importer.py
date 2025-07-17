@@ -1,3 +1,5 @@
+import math
+
 import bpy
 import struct
 from bpy.types import Operator
@@ -8,7 +10,7 @@ from .target_game import TargetGame
 from .gan2 import Gan2
 from .action_creator import GA2ActionCreator
 
-# currently unused
+
 class ProcessedAnimObject:
     obj = None
     parent_obj = None
@@ -23,12 +25,14 @@ class ProcessedAnimObject:
         self.prev_obj = _prev_obj
         self.next_obj = _next_obj
 
+
 # Returns the name of an animation based on its filepath
 def get_anim_name(anim_path):
     # TODO: Check operating system
     # The following code only works for Windows systems
     anim_name = str(anim_path).split('\\')[len(str(anim_path).split('\\'))-1].split('.')[0]
     return anim_name
+
 
 def sort_objects(objs):
     sorted_objs = []
@@ -53,6 +57,7 @@ def sort_objects(objs):
 
     return sorted_objs
 
+
 class GA2AnimImporter(Operator):
     bl_idname = "ga2_importer.anim_data"
     bl_label = "Import GAN2 animation"
@@ -67,7 +72,7 @@ class GA2AnimImporter(Operator):
 
         unsorted_objects = {}
         for i, anim_object in enumerate(ga2.anim_objects):
-            unsorted_objects[anim_object.data_offset] = anim_object
+            unsorted_objects[anim_object.offset] = anim_object
 
         objects = sort_objects(unsorted_objects)
         obj_armature = None

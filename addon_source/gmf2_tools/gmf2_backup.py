@@ -77,7 +77,7 @@ class Gmf2(KaitaiStruct):
             self.off_next = self._io.read_u4le()
             self.off_surfaces = self._io.read_u4le()
             self.unk_0x24 = self._io.read_f4le()
-            self.off_first_bone = self._io.read_u4le()
+            self.unk_0x28 = self._io.read_u4le()
             self.v_divisor = self._io.read_u4le()
             self.position = Gmf2.FlVector4Le(self._io, self, self._root)
             self.rotation = Gmf2.FlVector4Le(self._io, self, self._root)
@@ -89,43 +89,13 @@ class Gmf2(KaitaiStruct):
                 self.unk_padding = self._io.read_bytes(64)
 
 
-        class VertexData(KaitaiStruct):
-            def __init__(self, off_v_count, v_divisor, _io, _parent=None, _root=None):
-                self._io = _io
-                self._parent = _parent
-                self._root = _root if _root else self
-                self.off_v_count = off_v_count
-                self.v_divisor = v_divisor
-                self._read()
-
-            def _read(self):
-                self.v_buffer = []
-                for i in range(self.num_verts):
-                    _on = self.v_divisor
-                    if _on == 4294967295:
-                        self.v_buffer.append(Gmf2.FlVectorBe(self._io, self, self._root))
-                    else:
-                        self.v_buffer.append(Gmf2.ShortVector(self._io, self, self._root))
-
-
-            @property
-            def num_verts(self):
-                if hasattr(self, '_m_num_verts'):
-                    return self._m_num_verts
-
-                io = self._root._io
-                _pos = io.pos()
-                io.seek(self.off_v_count)
-                self._m_num_verts = io.read_u2le()
-                io.seek(_pos)
-                return getattr(self, '_m_num_verts', None)
-
-
         class Surface(KaitaiStruct):
-            def __init__(self, _io, _parent=None, _root=None):
+            def __init__(self, off_v_buf, v_divisor, _io, _parent=None, _root=None):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
+                self.off_v_buf = off_v_buf
+                self.v_divisor = v_divisor
                 self._read()
 
             def _read(self):
@@ -134,8 +104,8 @@ class Gmf2(KaitaiStruct):
                 self.off_data = self._io.read_u4le()
                 self.off_material = self._io.read_u4le()
                 self.unk_0x10 = self._io.read_u2le()
-                self.obj_vert_count = self._io.read_u2le()
-                self.off_skinning = self._io.read_u4le()
+                self.num_v = self._io.read_u2le()
+                self.unk_0x14 = self._io.read_u4le()
                 self.unk_0x18 = self._io.read_u2le()
                 self.unk_0x1a = self._io.read_u2le()
                 self.unk_0x1c = self._io.read_u2le()
@@ -158,102 +128,6 @@ class Gmf2(KaitaiStruct):
                     self.strip_data = self._io.read_bytes(self.len_data)
 
 
-            class Skindata(KaitaiStruct):
-                def __init__(self, _io, _parent=None, _root=None):
-                    self._io = _io
-                    self._parent = _parent
-                    self._root = _root if _root else self
-                    self._read()
-
-                def _read(self):
-                    self.off_prev = self._io.read_u4le()
-                    self.off_next = self._io.read_u4le()
-                    self.off_bone_connect = self._io.read_u4le()
-                    self._unnamed3 = self._io.read_bytes(4)
-                    if not self._unnamed3 == b"\x00\x00\x00\x00":
-                        raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed3, self._io, u"/types/world_object/types/surface/types/skindata/seq/3")
-
-                class Boneconnectdata(KaitaiStruct):
-                    def __init__(self, _io, _parent=None, _root=None):
-                        self._io = _io
-                        self._parent = _parent
-                        self._root = _root if _root else self
-                        self._read()
-
-                    def _read(self):
-                        self.off_prev = self._io.read_u4le()
-                        self.off_next = self._io.read_u4le()
-                        self.off_bind = self._io.read_u4le()
-                        self._unnamed3 = self._io.read_bytes(4)
-                        if not self._unnamed3 == b"\x00\x00\x00\x00":
-                            raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed3, self._io, u"/types/world_object/types/surface/types/skindata/types/boneconnectdata/seq/3")
-
-                    class Chainboneoffsets(KaitaiStruct):
-                        def __init__(self, _io, _parent=None, _root=None):
-                            self._io = _io
-                            self._parent = _parent
-                            self._root = _root if _root else self
-                            self._read()
-
-                        def _read(self):
-                            self.off_prev = self._io.read_u4le()
-                            self.off_next = self._io.read_u4le()
-                            self.off_bone = self._io.read_u4le()
-                            self.unk_float_35 = self._io.read_f4le()
-
-                        @property
-                        def bone_name(self):
-                            if hasattr(self, '_m_bone_name'):
-                                return self._m_bone_name
-
-                            io = self._root._io
-                            _pos = io.pos()
-                            io.seek(self.off_bone)
-                            self._m_bone_name = (KaitaiStream.bytes_terminate(io.read_bytes(8), 0, False)).decode(u"SHIFT-JIS")
-                            io.seek(_pos)
-                            return getattr(self, '_m_bone_name', None)
-
-
-                    @property
-                    def chain_bone_offsets(self):
-                        if hasattr(self, '_m_chain_bone_offsets'):
-                            return self._m_chain_bone_offsets
-
-                        io = self._root._io
-                        _pos = io.pos()
-                        io.seek(self.off_bind)
-                        self._m_chain_bone_offsets = []
-                        i = 0
-                        while True:
-                            _ = Gmf2.WorldObject.Surface.Skindata.Boneconnectdata.Chainboneoffsets(io, self, self._root)
-                            self._m_chain_bone_offsets.append(_)
-                            if _.off_next == 0:
-                                break
-                            i += 1
-                        io.seek(_pos)
-                        return getattr(self, '_m_chain_bone_offsets', None)
-
-
-                @property
-                def bone_connect_data(self):
-                    if hasattr(self, '_m_bone_connect_data'):
-                        return self._m_bone_connect_data
-
-                    io = self._root._io
-                    _pos = io.pos()
-                    io.seek(self.off_bone_connect)
-                    self._m_bone_connect_data = []
-                    i = 0
-                    while True:
-                        _ = Gmf2.WorldObject.Surface.Skindata.Boneconnectdata(io, self, self._root)
-                        self._m_bone_connect_data.append(_)
-                        if _.off_next == 0:
-                            break
-                        i += 1
-                    io.seek(_pos)
-                    return getattr(self, '_m_bone_connect_data', None)
-
-
             @property
             def surface_data(self):
                 if hasattr(self, '_m_surface_data'):
@@ -267,18 +141,23 @@ class Gmf2(KaitaiStruct):
                 return getattr(self, '_m_surface_data', None)
 
             @property
-            def skinning_data(self):
-                if hasattr(self, '_m_skinning_data'):
-                    return self._m_skinning_data
+            def v_buf(self):
+                if hasattr(self, '_m_v_buf'):
+                    return self._m_v_buf
 
-                if self.off_skinning != 0:
-                    io = self._root._io
-                    _pos = io.pos()
-                    io.seek(self.off_skinning)
-                    self._m_skinning_data = Gmf2.WorldObject.Surface.Skindata(io, self, self._root)
-                    io.seek(_pos)
+                io = self._root._io
+                _pos = io.pos()
+                io.seek(self.off_v_buf)
+                self._m_v_buf = []
+                for i in range(self.num_v):
+                    _on = self.v_divisor
+                    if _on == 4294967295:
+                        self._m_v_buf.append(Gmf2.FlVectorBe(io, self, self._root))
+                    else:
+                        self._m_v_buf.append(Gmf2.ShortVector(io, self, self._root))
 
-                return getattr(self, '_m_skinning_data', None)
+                io.seek(_pos)
+                return getattr(self, '_m_v_buf', None)
 
 
         @property
@@ -296,20 +175,6 @@ class Gmf2(KaitaiStruct):
             return getattr(self, '_m_v_format', None)
 
         @property
-        def v_data(self):
-            if hasattr(self, '_m_v_data'):
-                return self._m_v_data
-
-            if self.off_surfaces != 0:
-                io = self._root._io
-                _pos = io.pos()
-                io.seek(self.off_v_buf)
-                self._m_v_data = Gmf2.WorldObject.VertexData((self.off_surfaces + 18), self.v_divisor, io, self, self._root)
-                io.seek(_pos)
-
-            return getattr(self, '_m_v_data', None)
-
-        @property
         def surfaces(self):
             if hasattr(self, '_m_surfaces'):
                 return self._m_surfaces
@@ -321,7 +186,7 @@ class Gmf2(KaitaiStruct):
                 self._m_surfaces = []
                 i = 0
                 while True:
-                    _ = Gmf2.WorldObject.Surface(io, self, self._root)
+                    _ = Gmf2.WorldObject.Surface(self.off_v_buf, self.v_divisor, io, self, self._root)
                     self._m_surfaces.append(_)
                     if _.off_next == 0:
                         break

@@ -35,7 +35,7 @@ seq:
     type: u4le
   
   - id: anim_objects
-    type: anim_object(_io.pos)
+    type: anim_object
     repeat: expr
     repeat-expr: num_obj
     
@@ -91,9 +91,12 @@ types:
 
   # --- other
   anim_object:
-    params:
-      - id: offset
-        type: u4
+    instances:
+      obj_anim_data:
+        io: _root._io
+        pos: data_offset
+        type: anim_data
+        if: data_offset != 0
     seq:
       - id: name
         type: strz
@@ -114,12 +117,6 @@ types:
         type: u4le
       
       - contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    instances:
-      obj_anim_data:
-        io: _root._io
-        pos: data_offset
-        type: anim_data
-        if: data_offset != 0
   
   anim_data:
     seq:
@@ -214,15 +211,7 @@ types:
         type: u2le
         
       - id: data_pairs
-        type:
-          switch-on: block_id
-          cases:
-            0: s2le
-            1: s2le
-            2: s2le
-            3: u2le
-            4: u2le
-            5: u2le
+        type: s2le
         repeat: expr
         repeat-expr: data_pair_count
         

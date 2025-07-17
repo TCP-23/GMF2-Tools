@@ -87,6 +87,7 @@ class GM2ModelImporter(Operator):
     bl_label = "Import GMF2 model"
 
     obj_list = {}
+    offset_list = {}
     junk_objs = {}
     temp_arm_list = {}
 
@@ -95,6 +96,7 @@ class GM2ModelImporter(Operator):
         # Have to do this because Blender doesn't automatically clear them, otherwise the addon would break if you tried
         # to import multiple objects
         GM2ModelImporter.obj_list.clear()
+        GM2ModelImporter.offset_list.clear()
         GM2ModelImporter.junk_objs.clear()
 
         # Read the data from the GM2 file, and create a variable to hold it
@@ -132,17 +134,19 @@ class GM2ModelImporter(Operator):
     def import_objects(self, context, objects, obj_arm):
         for processed_obj in objects:
             # Check if the object has surfaces
-            if processed_obj.obj.surfaces is not None: # If so, get the mesh data from the surfaces
-                obj_data = [[], [], [], [], [], []] # vertices, indices, uvs, normals, unused (for now), material offset
+            if processed_obj.obj.surfaces is not None:  # If so, get the mesh data from the surfaces
+                obj_data = [[], [], [], [], [], [], []]  # vertices, indices, uvs, normals, unused (for now), material offset, skinning name
 
-                obj_data[0] += GM2ModelImporter.get_surface_verts(self, processed_obj, processed_obj.obj.surfaces[0])
+                obj_data[0] += GM2ModelImporter.get_object_verts(self, processed_obj)
                 for surf in processed_obj.obj.surfaces:
                     surf_idxs, surf_uvs, surf_norms = GM2ModelImporter.get_surface_data(self, processed_obj, surf)
+                    skin_name = GM2ModelImporter.get_skin_data(self, surf)
 
                     obj_data[1].append(surf_idxs)
                     obj_data[2] += surf_uvs
                     obj_data[3] += surf_norms
                     obj_data[5].append(surf.off_material)
+                    obj_data[6].append(skin_name)
 
                 # Create a mesh using the mesh data
                 new_mesh = GM2ObjectCreator.create_mesh(self, context, processed_obj, obj_data, obj_arm)
@@ -157,7 +161,7 @@ class GM2ModelImporter(Operator):
                 # If the object has normals, apply them
                 if len(GM2ObjectCreator.normals) > 0:
                     GM2ObjectCreator.apply_normals(self, new_mesh.data)
-            else: # If the object has no surfaces, create an empty object
+            else:  # If the object has no surfaces, create an empty object
                 new_obj = GM2ObjectCreator.create_object(self, context, processed_obj, self.up_axis)
                 GM2ModelImporter.obj_list[processed_obj.obj] = new_obj
 
@@ -165,32 +169,24 @@ class GM2ModelImporter(Operator):
                 if processed_obj.parent_obj is not None:
                     new_obj.parent = GM2ModelImporter.obj_list[processed_obj.parent_obj]
 
-    def get_surface_verts(self, processed_obj, surf):
-        # Get the mesh strips from the surface
-        mesh_strips = GM2ModelImporter.get_mesh_strips(self, surf, processed_obj)
-
-        # If the surface has no strips, return empty
-        if not mesh_strips:
-            return []
-
+    def get_object_verts(self, processed_obj):
         verts = []
+        v_buf = processed_obj.obj.v_data.v_buffer
 
-        for v in surf.v_buf:
+        for v in v_buf:
             # Check the game ID
             if TargetGame.gameId == GameTarget_Enum.NMH1:
                 try:
-                    vertPos = Vec3((v.x / pow(2, processed_obj.obj.v_divisor)) * 0.1,
-                               (v.y / pow(2, processed_obj.obj.v_divisor)) * 0.1,
-                               (v.z / pow(2, processed_obj.obj.v_divisor)) * 0.1)
+                    vertPos = Vec3((v.x / pow(2, processed_obj.obj.v_divisor)) * self.imp_scale,
+                                   (v.y / pow(2, processed_obj.obj.v_divisor)) * self.imp_scale,
+                                   (v.z / pow(2, processed_obj.obj.v_divisor)) * self.imp_scale)
                 except OverflowError:
-                    vertPos = Vec3(1 * 0.1,
-                               1 * 0.1,
-                               1 * 0.1)
-                    print(len(surf.v_buf))
+                    vertPos = Vec3(0.1, 0.1, 0.1)
+                    print(len(v_buf))
                     return []
             elif TargetGame.gameId == GameTarget_Enum.NMH2:
-                vertPos = Vec3(v.x * 0.1, v.y * 0.1, v.z * 0.1)
-            else: # If the game ID isn't recognized, return empty
+                vertPos = Vec3(v.x * self.imp_scale, v.y * self.imp_scale, v.z * self.imp_scale)
+            else:  # If the game ID isn't recognized, return empty
                 return []
 
             verts.append(vertPos)
@@ -229,6 +225,11 @@ class GM2ModelImporter(Operator):
                 indices.append(tuple((va, vb, vc)))
 
         return indices, uvs, normals
+
+    def get_skin_data(self, surf):
+        skin_name = ""
+
+        return skin_name
 
     def import_bones(self, context, bones):
         root_key = ""
@@ -306,7 +307,7 @@ class GM2ModelImporter(Operator):
             # Apply the display model to the bones
             for bone in pose_bones:
                 bone.custom_shape = bone_model
-                bone.custom_shape_scale_xyz = tuple((0.005, 0.005, 0.005))
+                bone.custom_shape_scale_xyz = tuple((self.imp_scale / 20, self.imp_scale / 20, self.imp_scale / 20))
                 bone.use_custom_shape_bone_size = False
 
             # Switch to object mode
@@ -387,7 +388,7 @@ class GM2ModelImporter(Operator):
                             u = struct.unpack('>h', ibuf[5:7])[0]
                             v = struct.unpack('>h', ibuf[7:9])[0]
 
-                        if len(surf.v_buf) >= idx - 1:
+                        if len(processed_obj.obj.v_data.v_buffer) >= idx - 1:
                             idxs.append(Gm2Idx(idx, u, v, norm))
                         else:
                             return []

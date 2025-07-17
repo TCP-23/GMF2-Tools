@@ -28,7 +28,7 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
 
         # Scale the position by 0.1
-        position = tuple((objData.obj.position.x * 0.1, objData.obj.position.y * 0.1, objData.obj.position.z * 0.1))
+        position = tuple((objData.obj.position.x * self.imp_scale, objData.obj.position.y * self.imp_scale, objData.obj.position.z * self.imp_scale))
         new_obj.location = position
 
         # i should rewrite this bit
@@ -55,7 +55,7 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
 
         # Scale the position by 0.1
-        new_obj.location = tuple((objData.obj.position.x * 0.1, objData.obj.position.y * 0.1, objData.obj.position.z * 0.1))
+        new_obj.location = tuple((objData.obj.position.x * self.imp_scale, objData.obj.position.y * self.imp_scale, objData.obj.position.z * self.imp_scale))
 
         if (objData.parent_obj is None) and (self.up_axis != 'OPT_C'):
             if self.up_axis == 'OPT_A':
@@ -82,7 +82,7 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         if obj_arm is not None:
             GM2ObjectCreator.create_skinned_partitions(self, context, new_obj, obj_arm, processedData[1])
         else:
-            GM2ObjectCreator.create_weight_partitions(self, context, new_obj, processedData[1])
+            GM2ObjectCreator.create_weight_partitions(self, context, new_obj, processedData[1], processedData[6])
         GM2ObjectCreator.create_mesh_faces(self, context, new_obj, processedData[1], processedData[2], processedData[3], processedData[5])
 
         # Turn on smooth shading
@@ -107,15 +107,17 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         new_bone = new_arm.edit_bones.new(boneData.obj.name)
 
         new_bone.head = tuple((0, 0, 0))
-        new_bone.tail = tuple((0, 0, 0.025))
+        new_bone.tail = tuple((0, 0, self.imp_scale / 4))
 
         # Set the tail position of the bone (bones in GM2 models don't have head positions)
         if boneData.first_child_obj is not None and boneData.first_child_obj.isBone:
-            new_bone.tail = tuple((boneData.first_child_obj.position.x * 0.1, boneData.first_child_obj.position.y * 0.1, boneData.first_child_obj.position.z * 0.1))
+            new_bone.tail = tuple((boneData.first_child_obj.position.x * self.imp_scale,
+                                   boneData.first_child_obj.position.y * self.imp_scale,
+                                   boneData.first_child_obj.position.z * self.imp_scale))
 
         # Make sure the bone can't be below the minimum length
-        if new_bone.head == new_bone.tail or new_bone.length <= 0.01:
-            new_bone.tail = tuple((0, 0, 0.025))
+        if new_bone.head == new_bone.tail or new_bone.length <= (self.imp_scale / 10):
+            new_bone.tail = tuple((0, 0, self.imp_scale / 4))
 
         # Switch to object mode
         bpy.ops.object.mode_set(mode="OBJECT")
@@ -134,15 +136,27 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         # No need to return anything, because we directly modify the mesh data block
 
     # Creates vertex groups on a model
-    def create_weight_partitions(self, context, obj, idxs):
+    def create_weight_partitions(self, context, obj, idxs, surf_names):
         bpy.ops.object.mode_set(mode="OBJECT")
         mesh = obj.data
 
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
+        if len(surf_names) == 0:
+            surf_names = ["surface_1"]
+
+        name_safety_idx = 0
+        while len(surf_names) < len(idxs) and name_safety_idx < len(idxs) * 2:
+            surf_names.append("")
+            name_safety_idx += 1
+
+        for i in range(0, len(surf_names)):
+            if surf_names[i] == "":
+                surf_names[i] = f"surface_{i+1}"
+
         for i, surf in enumerate(idxs):
-            obj.vertex_groups.new(name=f"surface_{i+1}")
+            obj.vertex_groups.new(name=surf_names[i])
             for idx in surf:
                 try:
                     mesh.vertices[idx[0] - 1].select = True
@@ -162,7 +176,7 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
 
     # Binds a model to an armature
     def create_skinned_partitions(self, context, obj, arm, idxs):
-        GM2ObjectCreator.create_weight_partitions(self, context, obj, idxs)
+        GM2ObjectCreator.create_weight_partitions(self, context, obj, idxs, [])
 
         armMod = obj.modifiers.new(name="Armature", type="ARMATURE")
         armMod.object = arm

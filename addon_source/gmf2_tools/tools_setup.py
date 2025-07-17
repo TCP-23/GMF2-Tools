@@ -50,6 +50,14 @@ class GMF2_Setup(Operator, ImportHelper):
         default=True
     )
 
+    imp_scale: FloatProperty(
+        name="Model Scale",
+        description="",
+        min=0.01,
+        max=10,
+        default=0.1
+    )
+
     import_normals: BoolProperty(
         name="Use Imported Normals",
         description="Use the normals that are packed into the model file",
@@ -97,12 +105,6 @@ class GAN2_Setup(Operator, ImportHelper):
 
     position_scale: FloatProperty(
         name="Position Scale",
-        description="",
-        default=0.0001
-    )
-
-    rotation_scale: FloatProperty(
-        name="Rotation Scale",
         description="",
         default=0.1
     )
