@@ -4,136 +4,48 @@ import bpy
 
 from bpy.types import Operator
 
-class AnimObjInfo:
-    anim_obj = None
-    obj_name = "NONE"
-    has_anim_data = False
-    has_pos = False
-    has_rot = False
-    is_child_obj = False
 
-    pos_x_block = None
-    pos_y_block = None
-    pos_z_block = None
-    rot_x_block = None
-    rot_y_block = None
-    rot_z_block = None
+def check_transform_type(chan_index, data_form_flag):
+    transform_type = 'NONE'
 
-    def __init__(self, anim_obj, is_first_child):
-        self.anim_obj = anim_obj
+    if chan_index <= 2:
+        #if data_form_flag == 4:
+            #transform_type = 'ROT'
+        #else:
+            #transform_type = 'POS'
+        transform_type = 'POS'
+    elif chan_index <= 5:
+        #if data_form_flag == 4:
+            #transform_type = 'POS'
+        #else:
+            #transform_type = 'ROT'
+        transform_type = 'ROT'
 
-        self.obj_name = self.anim_obj.name
+    if data_form_flag != 5:
+        transform_type = 'INVALID'
 
-        if self.anim_obj.obj_anim_data is not None:
-            self.has_anim_data = True
+    return transform_type
 
-            if self.anim_obj.off_parent != 0 and not is_first_child:
-                self.is_child_obj = True
-            else:
-                self.is_child_obj = False
-
-            # We don't need to check if the first 3 blocks are null, because every object with valid obj_anim_data will
-            # always have at least 3 blocks.
-
-            b1_data_type = calculate_block_data_type(self.anim_obj.obj_anim_data.pos_x_block)
-            b2_data_type = calculate_block_data_type(self.anim_obj.obj_anim_data.pos_y_block)
-            b3_data_type = calculate_block_data_type(self.anim_obj.obj_anim_data.pos_z_block)
-            b4_data_type = 'NONE'
-            b5_data_type = 'NONE'
-            b6_data_type = 'NONE'
-
-            if self.anim_obj.obj_anim_data.block_count == 6:
-                b4_data_type = calculate_block_data_type(self.anim_obj.obj_anim_data.rot_x_block)
-                b5_data_type = calculate_block_data_type(self.anim_obj.obj_anim_data.rot_y_block)
-                b6_data_type = calculate_block_data_type(self.anim_obj.obj_anim_data.rot_z_block)
-
-            if b1_data_type == 'POS_X':
-                self.pos_x_block = self.anim_obj.obj_anim_data.pos_x_block
-            else:
-                self.rot_x_block = self.anim_obj.obj_anim_data.pos_x_block
-
-            if b2_data_type == 'POS_Y':
-                self.pos_y_block = self.anim_obj.obj_anim_data.pos_y_block
-            else:
-                self.rot_y_block = self.anim_obj.obj_anim_data.pos_y_block
-
-            if b3_data_type == 'POS_Z':
-                self.pos_z_block = self.anim_obj.obj_anim_data.pos_z_block
-            else:
-                self.rot_z_block = self.anim_obj.obj_anim_data.pos_z_block
-
-            # If an object has both position and rotation data, the position data will always come first.
-            # Therefore, there is no need to perform an else check here.
-
-            if b4_data_type == 'ROT_X':
-                self.rot_x_block = self.anim_obj.obj_anim_data.rot_x_block
-            if b5_data_type == 'ROT_Y':
-                self.rot_y_block = self.anim_obj.obj_anim_data.rot_y_block
-            if b6_data_type == 'ROT_Z':
-                self.rot_z_block = self.anim_obj.obj_anim_data.rot_z_block
-
-            if self.pos_x_block is not None or self.pos_y_block is not None or self.pos_z_block is not None:
-                self.has_pos = True
-            else:
-                self.has_pos = False
-
-            if self.rot_x_block is not None or self.rot_y_block is not None or self.rot_z_block is not None:
-                self.has_rot = True
-            else:
-                self.has_rot = False
-        else:
-            self.has_anim_data = False
-            self.is_child_obj = False
-            self.has_pos = False
-            self.has_rot = False
-
-
-def calculate_block_data_type(anim_data_block):
-    data_type = 'NONE'
-
-    match anim_data_block.block_id:
-        case 0:
-            data_type = 'POS_X'
-        case 1:
-            data_type = 'POS_Y'
-        case 2:
-            data_type = 'POS_Z'
-        case 3:
-            data_type = 'ROT_X'
-        case 4:
-            data_type = 'ROT_Y'
-        case 5:
-            data_type = 'ROT_Z'
-
-    return data_type
 
 def gan2_rot_to_rad(gan2_rot):
-    unclamped_rad_val = 0
-    clamped_rad_val = 0
+    scale_factor = 32767 / math.pi
+    rad_rot = ((gan2_rot / math.pi) / scale_factor) * math.pi
 
-    """unclamped_rad_val = (gan2_rot / 66535) * math.tau
-    if unclamped_rad_val < 0:
-        clamped_rad_val = (unclamped_rad_val + math.tau * abs(math.floor(unclamped_rad_val / math.tau)))
-    elif unclamped_rad_val > math.tau:
-        clamped_rad_val = (unclamped_rad_val - math.tau * abs(math.floor(unclamped_rad_val / math.tau)))
-    else:
-        clamped_rad_val = unclamped_rad_val"""
+    return rad_rot
 
-    unclamped_rad_val = ((66535 - gan2_rot) / 32768)
-    #unclamped_rad_val = gan2_rot - 32768
-    clamped_rad_val = unclamped_rad_val
-
-    return clamped_rad_val
 
 def rad_to_gan2_rot(rad_rot):
-    RADIAN_MAX = 2 * math.pi
+    scale_factor = 32767
+    gan2_rot = rad_rot * scale_factor
 
-    return (rad_rot / RADIAN_MAX) * 66535
+    return gan2_rot
+
 
 def gan2_rot_to_deg(gan2_rot):
     rad_rot = gan2_rot_to_rad(gan2_rot)
 
     return rad_rot * (180 / math.pi)
+
 
 def deg_to_gan2_rot(deg_rot):
     rad_rot = deg_rot * (math.pi / 180)
@@ -146,20 +58,7 @@ class GA2ActionCreator(Operator):
     bl_label = "Create GAN2 Action"
 
     # Creates a Blender action from provided GA2 anim data
-    def create_action(self, context, end_frame, anim_name, anim_objects):
-
-        anim_obj_datas = []
-        for anim_obj in anim_objects:
-            is_first_child = False
-            if anim_obj.parent_obj is not None:
-                if anim_obj.parent_obj.off_parent == 0:
-                    is_first_child = True
-            else:
-                print(f"Obj Name: {anim_obj.obj.name}. No parent!")
-
-            anim_obj_datas.append(AnimObjInfo(anim_obj.obj, is_first_child))
-            print(f"Obj Name: {anim_obj.obj.name}. Is first child: {is_first_child}")
-
+    def create_action(self, context, end_frame, anim_name, anim_obj_datas):
         if context.active_object.mode != "POSE":
             bpy.ops.object.mode_set(mode="POSE")
 
@@ -211,10 +110,14 @@ class GA2ActionCreator(Operator):
             case 'ROT_Z':
                 channel_index = 5
 
-        if anim_curve is None:
-            converted_chan_idx = GA2ActionCreator.convert_channel_index(self, context, channel_index, self.up_axis, is_child_obj)
+        converted_chan_idx = GA2ActionCreator.convert_channel_index(self, context, channel_index, self.up_axis, is_child_obj)
+        transform_type = check_transform_type(channel_index, blockData.v_divisor)
 
-            if channel_index <= 2:  # Position
+        if transform_type == 'INVALID':
+            return
+
+        if anim_curve is None:
+            if transform_type == 'POS':  # Position
                 bone.location = (0.0, 0.0, 0.0)
                 bone.keyframe_insert(data_path="location", frame=1, index=converted_chan_idx)
 
@@ -223,7 +126,7 @@ class GA2ActionCreator(Operator):
                         if curve.array_index == converted_chan_idx:
                             anim_curve = curve
 
-            elif channel_index <= 5:  # Rotation
+            elif transform_type == 'ROT':  # Rotation
                 bone.rotation_euler = (0.0, 0.0, 0.0)
                 bone.keyframe_insert(data_path="rotation_euler", frame=1, index=converted_chan_idx)
 
@@ -233,55 +136,44 @@ class GA2ActionCreator(Operator):
                             anim_curve = curve
 
         GA2ActionCreator.insert_empty_keyframes(self, context, bone, anim_channel_frames, channel_index, is_child_obj)
+        GA2ActionCreator.insert_empty_keyframes(self, context, bone, anim_channel_frames, converted_chan_idx, transform_type)
 
         # We have to manually increment the index because the length of the data_pairs array is 1 less than the
         # amount of keyframes in our curve.
         kf_index = 0
         for kf in anim_curve.keyframe_points:
             context.scene.frame_current = int(kf.co[0])
-            GA2ActionCreator.insert_keyframe(self, context, bone, blockData.v_divisor, blockData.data_pairs[kf_index], channel_index, is_child_obj)
+            GA2ActionCreator.insert_keyframe(self, context, bone, blockData.v_divisor, blockData.data_pairs[kf_index],
+                                             converted_chan_idx, transform_type)
 
             kf_index += 1
 
-    def insert_empty_keyframes(self, context, bone, kf_count, channel_index, is_child_obj):
+    def insert_empty_keyframes(self, context, bone, kf_count, converted_chan_index, transform_type):
         frame_counter = 1
         context.scene.frame_current = 1
 
-        converted_chan_index = GA2ActionCreator.convert_channel_index(self, context, channel_index, self.up_axis, is_child_obj)
-
-        if channel_index <= 2:
+        if transform_type == 'POS':
             bone.location = (1.5, 1.5, 1.5)
 
             for i in range(0, kf_count):
                 bone.keyframe_insert(data_path="location", frame=frame_counter, index=converted_chan_index)
                 frame_counter += 1
-        elif channel_index <= 5:
+        elif transform_type == 'ROT':
             bone.rotation_euler = (math.radians(20.0), math.radians(20.0), math.radians(20.0))
 
             for i in range(0, kf_count):
                 bone.keyframe_insert(data_path="rotation_euler", frame=frame_counter, index=converted_chan_index)
                 frame_counter += 1
 
-    def insert_keyframe(self, context, bone, v_div, vecData, channel_index, is_child_obj):
-        converted_chan_index = GA2ActionCreator.convert_channel_index(self, context, channel_index, self.up_axis, is_child_obj)
-
-        if channel_index <= 2:
-            # (position_data / pow(2, unk_3)) * scale_factor
-            # (position_data / pow(2, v_divisor)) * scale_factor
-            # (-32625 / pow(2, 5)) * 0.1
-
-            if v_div == 5:
-                bone.location[converted_chan_index] = (vecData / pow(2, v_div)) * self.position_scale
-            else:
-                bone.location[converted_chan_index] = 0.0
+    def insert_keyframe(self, context, bone, v_div, vecData, converted_chan_index, transform_type):
+        if transform_type == 'POS':
+            # Might not actually be v_divisor, the location may be derived from a matrix space, similar to rotation
+            # bone.location[converted_chan_index] = (vecData / pow(2, v_div)) * self.position_scale
+            bone.location[converted_chan_index] = (vecData / pow(2, v_div)) * self.position_scale
 
             bone.keyframe_insert(data_path="location", frame=context.scene.frame_current, index=converted_chan_index)
-        elif channel_index <= 5:
-            if v_div == 5:
-                #bone.rotation_euler[converted_chan_index] = gan2_rot_to_rad(vecData)
-                bone.rotation_euler[converted_chan_index] = math.radians((vecData / pow(2, v_div)) / math.tau)
-            else:
-                bone.rotation_euler[converted_chan_index] = 0.0
+        elif transform_type == 'ROT':
+            bone.rotation_euler[converted_chan_index] = gan2_rot_to_rad(vecData)
             bone.keyframe_insert(data_path="rotation_euler", frame=context.scene.frame_current, index=converted_chan_index)
 
     def set_interpolation(self, context):

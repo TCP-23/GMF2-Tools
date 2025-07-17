@@ -322,11 +322,12 @@ class GM2ModelImporter(Operator):
 
     # Cleans up Blender by deleting unneeded assets
     def cleanup_imported(self, context, process_obj_list, root_armature):
-        # Deselect everything
-        bpy.ops.object.mode_set(mode="OBJECT")
-        bpy.ops.object.select_all(action='DESELECT')
-
         if self.import_models:
+
+            # Deselect everything
+            bpy.ops.object.mode_set(mode="OBJECT")
+            bpy.ops.object.select_all(action='DESELECT')
+
             for obj in process_obj_list:
                 if obj.parent_obj is not None and obj.parent_obj in GM2ModelImporter.junk_objs:
                     bpy.data.objects[GM2ModelImporter.obj_list[obj.obj].name].select_set(True)
