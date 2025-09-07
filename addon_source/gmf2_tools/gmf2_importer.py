@@ -13,6 +13,7 @@ from .gct0_handler import GCTTextureHandler
 Vec3 = namedtuple("Vec3", "x y z")
 Gm2Idx = namedtuple("Gm2Idx", "i u v n")
 
+
 # Used to keep links from the GM2 file when imported into Blender
 class ProcessedObject:
     obj = None

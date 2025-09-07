@@ -195,6 +195,8 @@ class GA2AnimImporter(Operator):
 
         # Create a Blender action using the anim data
         GA2ActionCreator.create_action(self, context, end_frame, anim_name, anim_obj_datas)
+        
+        GA2AnimImporter.cleanup_imported(self, context)
 
     def cleanup_imported(self, context):
         pass

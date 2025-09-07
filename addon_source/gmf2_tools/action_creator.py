@@ -135,7 +135,7 @@ class GA2ActionCreator(Operator):
                         if curve.array_index == converted_chan_idx:
                             anim_curve = curve
 
-        GA2ActionCreator.insert_empty_keyframes(self, context, bone, anim_channel_frames, channel_index, is_child_obj)
+        #GA2ActionCreator.insert_empty_keyframes(self, context, bone, anim_channel_frames, channel_index, is_child_obj)
         GA2ActionCreator.insert_empty_keyframes(self, context, bone, anim_channel_frames, converted_chan_idx, transform_type)
 
         # We have to manually increment the index because the length of the data_pairs array is 1 less than the
@@ -153,13 +153,13 @@ class GA2ActionCreator(Operator):
         context.scene.frame_current = 1
 
         if transform_type == 'POS':
-            bone.location = (1.5, 1.5, 1.5)
+            #bone.location = (1.5, 1.5, 1.5)
 
             for i in range(0, kf_count):
                 bone.keyframe_insert(data_path="location", frame=frame_counter, index=converted_chan_index)
                 frame_counter += 1
         elif transform_type == 'ROT':
-            bone.rotation_euler = (math.radians(20.0), math.radians(20.0), math.radians(20.0))
+            #bone.rotation_euler = (math.radians(20.0), math.radians(20.0), math.radians(20.0))
 
             for i in range(0, kf_count):
                 bone.keyframe_insert(data_path="rotation_euler", frame=frame_counter, index=converted_chan_index)

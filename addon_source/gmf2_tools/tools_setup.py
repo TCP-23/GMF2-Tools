@@ -106,7 +106,7 @@ class GAN2_Setup(Operator, ImportHelper):
     position_scale: FloatProperty(
         name="Position Scale",
         description="",
-        default=0.1
+        default=0.0001
     )
 
     trim_repeat: BoolProperty(
