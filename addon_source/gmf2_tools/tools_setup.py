@@ -3,9 +3,10 @@ import bpy
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 
-from bpy.props import BoolProperty, StringProperty, EnumProperty
+from bpy.props import BoolProperty, StringProperty, EnumProperty, FloatProperty
 
 from .gmf2_importer import GM2ModelImporter
+from .gan2_importer import GA2AnimImporter
 
 
 class GMF2_Setup(Operator, ImportHelper):
@@ -37,20 +38,9 @@ class GMF2_Setup(Operator, ImportHelper):
         default='OPT_B'
     )
 
-    """data_import: EnumProperty(
-        name="Data Import Type",
-        description="",
-        items=(
-            ('OPT_A', "Everything", ""),
-            ('OPT_B', "Models & Textures", ""),
-            ('OPT_C', "Models Only", ""),
-            ('OPT_D', "Textures Only", ""),
-        )
-    )"""
-
     import_models: BoolProperty(
         name="Import Models & Armatures",
-        description="Turn this off if you just want the textures",
+        description="Turn this off if you just want to load the textures into Blender",
         default=True
     )
 
@@ -58,6 +48,14 @@ class GMF2_Setup(Operator, ImportHelper):
         name="Import Materials & Textures",
         description="Turn this off if you don't care about textures, or want the models to load faster",
         default=True
+    )
+
+    imp_scale: FloatProperty(
+        name="Model Scale",
+        description="",
+        min=0.01,
+        max=10,
+        default=0.1
     )
 
     import_normals: BoolProperty(
@@ -90,9 +88,46 @@ class FLCG_Setup(Operator, ImportHelper):
 
 class GAN2_Setup(Operator, ImportHelper):
     bl_idname = "ghman_tools.ga2_setup"
-    bl_label = "Import GAN2 Animation"
+    bl_label = "Import GAN2 Anim"
 
     filter_glob: StringProperty(default="*.ga2", options={'HIDDEN'})
+
+    up_axis: EnumProperty(
+        name="Up Axis",
+        description="The up axis of the animation you are trying to import. \nMess with this if your animation imports in the wrong orientation.\n",
+        items=(
+            ('OPT_A', "X", ""),
+            ('OPT_B', "Y", ""),
+            ('OPT_C', "Z", ""),
+        ),
+        default='OPT_B'
+    )
+
+    position_scale: FloatProperty(
+        name="Position Scale",
+        description="",
+        default=0.0001
+    )
+
+    trim_repeat: BoolProperty(
+        name="Trim Looping Animation",
+        description="If an animation has a built-in loop (repeat keyframes), trim the animation so it only contains one set",
+        default=False
+    )
+
+    axis_swap_children: BoolProperty(
+        name="Axis Swap Children",
+        description="",
+        default=False
+    )
+
+    def start_plugin(self, context, filepath):
+        GA2AnimImporter.load_file_data(self, context, filepath)
+
+    def execute(self, context):
+        self.start_plugin(context, self.filepath)
+
+        return {'FINISHED'}
 
 
 class RMHG_Setup(Operator, ImportHelper):

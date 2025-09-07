@@ -210,7 +210,7 @@ types:
         type: u4le
       - id: unk_0x24
         type: f4le
-      - id: unk_0x28
+      - id: off_first_bone
         type: u4le
       - id: v_divisor
         type: u4le
@@ -235,21 +235,42 @@ types:
         pos: off_v_format
         size: 6
         if: off_v_format != 0x3f800000 and off_v_format != 0
+
+      v_data:
+        io: _root._io
+        pos: off_v_buf
+        type: vertex_data(off_surfaces + 18, v_divisor)
+        if: off_surfaces != 0
       surfaces:
         io: _root._io
         pos: off_surfaces
-        type: surface(off_v_buf, v_divisor)
+        type: surface
         repeat: until
         repeat-until: _.off_next == 0
         if: off_surfaces != 0
         
     types:
-      surface:
+      vertex_data:
         params:
-          - id: off_v_buf
+          - id: off_v_count
             type: u4
           - id: v_divisor
-            type: s4
+            type: u4
+        seq:
+          - id: v_buffer
+            type:
+              switch-on: v_divisor
+              cases:
+                0xFFFFFFFF: fl_vector_be
+                _: short_vector
+            repeat: expr
+            repeat-expr: num_verts
+        instances:
+          num_verts:
+            io: _root._io
+            pos: off_v_count
+            type: u2le
+      surface:
         seq:
           - id: off_prev
             type: u4le
@@ -261,9 +282,9 @@ types:
             type: u4le
           - id: unk_0x10
             type: u2le
-          - id: num_v
+          - id: obj_vert_count
             type: u2le
-          - id: unk_0x14
+          - id: off_skinning
             type: u4le
           - id: unk_0x18
             type: u2le
@@ -278,16 +299,11 @@ types:
             io: _root._io
             pos: off_data
             type: surfdata
-          v_buf:
+          skinning_data:
             io: _root._io
-            pos: off_v_buf
-            type:
-              switch-on: v_divisor
-              cases:
-                0xFFFFFFFF: fl_vector_be
-                _: short_vector
-            repeat: expr
-            repeat-expr: num_v
+            pos: off_skinning
+            type: skindata
+            if: off_skinning != 0
         types:
           surfdata:
             seq:
@@ -301,4 +317,53 @@ types:
               
               - id: strip_data
                 size: len_data
-                
+          skindata:
+            seq:
+              - id: off_prev
+                type: u4le
+              - id: off_next
+                type: u4le
+              - id: off_bone_connect
+                type: u4le
+              - contents: [0, 0, 0, 0]
+            instances:
+              bone_connect_data:
+                io: _root._io
+                pos: off_bone_connect
+                type: boneconnectdata
+                repeat: until
+                repeat-until: _.off_next == 0
+            types:
+              boneconnectdata:
+                seq:
+                  - id: off_prev
+                    type: u4le
+                  - id: off_next
+                    type: u4le
+                  - id: off_bind
+                    type: u4le
+                  - contents: [0, 0, 0, 0]
+                instances:
+                  chain_bone_offsets:
+                    io: _root._io
+                    pos: off_bind
+                    type: chainboneoffsets
+                    repeat: until
+                    repeat-until: _.off_next == 0
+                types:
+                  chainboneoffsets:
+                    seq:
+                      - id: off_prev
+                        type: u4le
+                      - id: off_next
+                        type: u4le
+                      - id: off_bone
+                        type: u4le
+                      - id: unk_float_35 # This value has to total 1 between all chain bones
+                        type: f4le
+                    instances:
+                      bone_name:
+                        io: _root._io
+                        pos: off_bone
+                        type: strz
+                        size: 8

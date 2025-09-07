@@ -27,9 +27,11 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         obj_mesh = bpy.data.meshes.new(objData.obj.name)
         new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
 
-        position = tuple((objData.obj.position.x * 0.1, objData.obj.position.y * 0.1, objData.obj.position.z * 0.1))
+        # Scale the position by 0.1
+        position = tuple((objData.obj.position.x * self.imp_scale, objData.obj.position.y * self.imp_scale, objData.obj.position.z * self.imp_scale))
         new_obj.location = position
 
+        # i should rewrite this bit
         if (objData.parent_obj is None) and (self.up_axis != 'OPT_C'):
             if self.up_axis == 'OPT_A':
                 rotation = tuple((0, objData.obj.rotation.y + math.radians(90), objData.obj.rotation.z))
@@ -48,11 +50,12 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
 
         return new_obj
 
-    def create_mesh(self, context, objData, processedData):
+    def create_mesh(self, context, objData, processedData, obj_arm):
         obj_mesh = bpy.data.meshes.new(objData.obj.name)
         new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
 
-        new_obj.location = tuple((objData.obj.position.x * 0.1, objData.obj.position.y * 0.1, objData.obj.position.z * 0.1))
+        # Scale the position by 0.1
+        new_obj.location = tuple((objData.obj.position.x * self.imp_scale, objData.obj.position.y * self.imp_scale, objData.obj.position.z * self.imp_scale))
 
         if (objData.parent_obj is None) and (self.up_axis != 'OPT_C'):
             if self.up_axis == 'OPT_A':
@@ -74,32 +77,49 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
             GM2ObjectCreator.apply_materials(self, new_obj, objData.obj, GCTTextureHandler.mat_list)
 
         GM2ObjectCreator.create_mesh_vertices(self, new_obj, processedData[0])
-        GM2ObjectCreator.create_skinned_partitions(self, context, new_obj, processedData[1])
+
+        # Check if the GM2 file contains an armature
+        if obj_arm is not None:
+            GM2ObjectCreator.create_skinned_partitions(self, context, new_obj, obj_arm, processedData[1])
+        else:
+            GM2ObjectCreator.create_weight_partitions(self, context, new_obj, processedData[1], processedData[6])
         GM2ObjectCreator.create_mesh_faces(self, context, new_obj, processedData[1], processedData[2], processedData[3], processedData[5])
 
+        # Turn on smooth shading
         new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
         return new_obj
 
     def create_bone(self, context, boneData, parent_empty):
+        # Create a new temporary armature
         new_arm = bpy.data.armatures.new(f"temp_arm_{boneData.obj.name}")
         arm_obj = object_utils.object_data_add(context, new_arm, operator=None)
 
         arm_obj.parent = parent_empty
 
+        # Set the active object to the armature
         context.view_layer.objects.active = arm_obj
+
+        # Switch to edit mode
         if context.active_object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
 
+        # Create a new bone on the temporary armature
         new_bone = new_arm.edit_bones.new(boneData.obj.name)
 
         new_bone.head = tuple((0, 0, 0))
-        new_bone.tail = tuple((0, 0, 0.025))
+        new_bone.tail = tuple((0, 0, self.imp_scale / 4))
+
+        # Set the tail position of the bone (bones in GM2 models don't have head positions)
         if boneData.first_child_obj is not None and boneData.first_child_obj.isBone:
-            new_bone.tail = tuple((boneData.first_child_obj.position.x * 0.1, boneData.first_child_obj.position.y * 0.1, boneData.first_child_obj.position.z * 0.1))
+            new_bone.tail = tuple((boneData.first_child_obj.position.x * self.imp_scale,
+                                   boneData.first_child_obj.position.y * self.imp_scale,
+                                   boneData.first_child_obj.position.z * self.imp_scale))
 
-        if new_bone.head == new_bone.tail or new_bone.length <= 0.01:
-            new_bone.tail = tuple((0, 0, 0.025))
+        # Make sure the bone can't be below the minimum length
+        if new_bone.head == new_bone.tail or new_bone.length <= (self.imp_scale / 10):
+            new_bone.tail = tuple((0, 0, self.imp_scale / 4))
 
+        # Switch to object mode
         bpy.ops.object.mode_set(mode="OBJECT")
 
         return arm_obj
@@ -115,15 +135,28 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
             bm.to_mesh(mesh)
         # No need to return anything, because we directly modify the mesh data block
 
-    def create_skinned_partitions(self, context, obj, idxs):
+    # Creates vertex groups on a model
+    def create_weight_partitions(self, context, obj, idxs, surf_names):
         bpy.ops.object.mode_set(mode="OBJECT")
         mesh = obj.data
 
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
+        if len(surf_names) == 0:
+            surf_names = ["surface_1"]
+
+        name_safety_idx = 0
+        while len(surf_names) < len(idxs) and name_safety_idx < len(idxs) * 2:
+            surf_names.append("")
+            name_safety_idx += 1
+
+        for i in range(0, len(surf_names)):
+            if surf_names[i] == "":
+                surf_names[i] = f"surface_{i+1}"
+
         for i, surf in enumerate(idxs):
-            obj.vertex_groups.new(name=f"surface_{i+1}")
+            obj.vertex_groups.new(name=surf_names[i])
             for idx in surf:
                 try:
                     mesh.vertices[idx[0] - 1].select = True
@@ -140,6 +173,13 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
                 mesh.vertices[idx[0] - 1].select = False
                 mesh.vertices[idx[1] - 1].select = False
                 mesh.vertices[idx[2] - 1].select = False
+
+    # Binds a model to an armature
+    def create_skinned_partitions(self, context, obj, arm, idxs):
+        GM2ObjectCreator.create_weight_partitions(self, context, obj, idxs, [])
+
+        armMod = obj.modifiers.new(name="Armature", type="ARMATURE")
+        armMod.object = arm
 
     def create_mesh_faces(self, context, obj, idxs, uvs, norms, mat_index):
         bpy.ops.object.mode_set(mode="OBJECT")
@@ -172,50 +212,18 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
                     uv_loop.uv = uvs[uv_iter]
                     uv_iter += 1
 
+                # Set the material index of the face
                 if self.import_mats:
                     new_face.material_index = mesh["MatIdxs"][str(mat_index[mat_iter])]
 
             mat_iter += 1
 
+        # Apply the faces to the mesh
         bm.to_mesh(mesh)
         mesh.update()
         bm.free()
 
-    def create_mesh_surface(self, mesh, sdata: SurfData, mat_index):
-        bm = bmesh.new()
-        bm.from_mesh(mesh)
-
-        if len(sdata.verts) > 0:
-            for vert in sdata.verts:
-                bm.verts.new([vert[0], vert[1], vert[2]])
-            bm.to_mesh(mesh)
-
-        bm.verts.ensure_lookup_table()
-
-        uv_layer = bm.loops.layers.uv.verify()
-
-        iteration = 0
-        for idx_group in sdata.idxs:
-            if idx_group.count(idx_group[0]) == 1 and idx_group.count(idx_group[1]) == 1 and idx_group.count(
-                    idx_group[2]) == 1:
-                if not bm.faces.get([bm.verts[j - 1] for j in idx_group]):
-                    face = bm.faces.new([bm.verts[j - 1] for j in idx_group])
-                    for loop in face.loops:
-                        vert = loop.vert
-                        if GM2ObjectCreator.normals.get(vert.index) is None and vert.index >= 0:
-                            GM2ObjectCreator.normals[vert.index] = sdata.norms[iteration]
-
-                        loop_uv = loop[uv_layer]
-                        loop_uv.uv = sdata.uvs[iteration]
-                        iteration += 1
-
-                    if self.import_mats:
-                        face.material_index = mesh["MatIdxs"][str(mat_index)]
-
-        bm.to_mesh(mesh)
-        bm.free()
-        mesh.update()
-
+    # Applies stored normals to a mesh
     def apply_normals(self, mesh):
         normals = []
 
@@ -235,6 +243,7 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
             mesh.normals_split_custom_set_from_vertices(normals)
         GM2ObjectCreator.normals = {}
 
+    # Applies a material to an object
     def apply_materials(self, mesh, objData, mat_list):
         mat_idx_chart = {}
 
