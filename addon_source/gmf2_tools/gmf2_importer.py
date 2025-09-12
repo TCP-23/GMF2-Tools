@@ -9,13 +9,14 @@ from .target_game import TargetGame
 from .gmf2 import Gmf2
 from .object_creator import GM2ObjectCreator
 from .gct0_handler import GCTTextureHandler
+from .processed_object_data import ModelObjInfo
 
 Vec3 = namedtuple("Vec3", "x y z")
 Gm2Idx = namedtuple("Gm2Idx", "i u v n")
 
 
 # Used to keep links from the GM2 file when imported into Blender
-class ProcessedObject:
+"""class ProcessedObject:
     obj = None
     parent_obj = None
     first_child_obj = None
@@ -27,7 +28,7 @@ class ProcessedObject:
         self.parent_obj = _parent_obj
         self.first_child_obj = _first_child_obj
         self.prev_obj = _prev_obj
-        self.next_obj = _next_obj
+        self.next_obj = _next_obj"""
 
 
 # Sorts objects based on their data types, and creates lists of the objects
@@ -37,7 +38,16 @@ def sort_objects(objs):
 
     bone_world_objects = []
 
-    # Loop through every object inside the provided list
+    processed_object_data = ModelObjInfo.process_object_info(objs)
+    for proc_data in processed_object_data:
+        if proc_data.is_bone:
+            sorted_bones.append(proc_data)
+        #elif proc_data.has_model_data:
+            #sorted_meshes.append(proc_data)
+        else:
+            sorted_objs.append(proc_data)
+
+    """# Loop through every object inside the provided list
     for i, world_object in objs.items():
         parent, first_child, prev_obj, next_obj = None, None, None, None
 
@@ -65,7 +75,7 @@ def sort_objects(objs):
             bone_world_objects.append(processed_obj.obj)
         else:
             processed_obj.obj.isBone = False
-            sorted_objs.append(processed_obj)
+            sorted_objs.append(processed_obj)"""
 
     return sorted_objs, sorted_bones
 
@@ -138,14 +148,14 @@ class GM2ModelImporter(Operator):
         GM2ModelImporter.cleanup_imported(self, context, objects, obj_armature)
 
     def import_objects(self, context, objects, obj_arm):
-        for processed_obj in objects:
-            # Check if the object has surfaces
-            if processed_obj.obj.surfaces is not None:  # If so, get the mesh data from the surfaces
+        for m_info in objects:
+            # Check if the object has model data
+            if m_info.has_model_data:  # If so, get the mesh data from the surfaces
                 obj_data = [[], [], [], [], [], [], []]  # vertices, indices, uvs, normals, unused (for now), material offset, skinning name
 
-                obj_data[0] += GM2ModelImporter.get_object_verts(self, processed_obj)
-                for surf in processed_obj.obj.surfaces:
-                    surf_idxs, surf_uvs, surf_norms = GM2ModelImporter.get_surface_data(self, processed_obj, surf)
+                obj_data[0] += GM2ModelImporter.GET_OBJECT_VERTS(self, m_info)
+                for surf in m_info.data_obj.surfaces:
+                    surf_idxs, surf_uvs, surf_norms = GM2ModelImporter.GET_SURFACE_DATA(self, m_info, surf)
                     skin_name = GM2ModelImporter.get_skin_data(self, surf)
 
                     obj_data[1].append(surf_idxs)
@@ -155,37 +165,37 @@ class GM2ModelImporter(Operator):
                     obj_data[6].append(skin_name)
 
                 # Create a mesh using the mesh data
-                new_mesh = GM2ObjectCreator.create_mesh(self, context, processed_obj, obj_data, obj_arm)
+                new_mesh = GM2ObjectCreator.CREATE_MESH(self, context, m_info, obj_data, obj_arm)
 
                 # Add the mesh to the object list
-                GM2ModelImporter.obj_list[processed_obj.obj] = new_mesh
+                GM2ModelImporter.obj_list[m_info.data_obj] = new_mesh
 
                 # Set the object's parent
-                if processed_obj.parent_obj is not None:
-                    new_mesh.parent = GM2ModelImporter.obj_list[processed_obj.parent_obj]
+                if m_info.is_child_obj:
+                    new_mesh.parent = GM2ModelImporter.obj_list[m_info.parent_obj]
 
                 # If the object has normals, apply them
                 if len(GM2ObjectCreator.normals) > 0:
                     GM2ObjectCreator.apply_normals(self, new_mesh.data)
             else:  # If the object has no surfaces, create an empty object
-                new_obj = GM2ObjectCreator.create_object(self, context, processed_obj, self.up_axis)
-                GM2ModelImporter.obj_list[processed_obj.obj] = new_obj
+                new_obj = GM2ObjectCreator.CREATE_OBJECT(self, context, m_info)
+                GM2ModelImporter.obj_list[m_info.data_obj] = new_obj
 
                 # Set the object's parent
-                if processed_obj.parent_obj is not None:
-                    new_obj.parent = GM2ModelImporter.obj_list[processed_obj.parent_obj]
+                if m_info.is_child_obj:
+                    new_obj.parent = GM2ModelImporter.obj_list[m_info.parent_obj]
 
-    def get_object_verts(self, processed_obj):
+    def GET_OBJECT_VERTS(self, m_info):
         verts = []
-        v_buf = processed_obj.obj.v_data.v_buffer
+        v_buf = m_info.data_obj.v_data.v_buffer
 
         for v in v_buf:
             # Check the game ID
             if TargetGame.gameId == GameTarget_Enum.NMH1:
                 try:
-                    vertPos = Vec3((v.x / pow(2, processed_obj.obj.v_divisor)) * self.imp_scale,
-                                   (v.y / pow(2, processed_obj.obj.v_divisor)) * self.imp_scale,
-                                   (v.z / pow(2, processed_obj.obj.v_divisor)) * self.imp_scale)
+                    vertPos = Vec3((v.x / pow(2, m_info.data_obj.v_divisor)) * self.imp_scale,
+                                   (v.y / pow(2, m_info.data_obj.v_divisor)) * self.imp_scale,
+                                   (v.z / pow(2, m_info.data_obj.v_divisor)) * self.imp_scale)
                 except OverflowError:
                     vertPos = Vec3(0.1, 0.1, 0.1)
                     print(len(v_buf))
@@ -199,10 +209,8 @@ class GM2ModelImporter(Operator):
 
         return verts
 
-    # Returns the mesh data of a surface (indices, uvs, normals)
-    def get_surface_data(self, processed_obj, surf):
-        # Get the mesh strips of a surface
-        mesh_strips = GM2ModelImporter.get_mesh_strips(self, surf, processed_obj)
+    def GET_SURFACE_DATA(self, m_info, surf):
+        mesh_strips = GM2ModelImporter.GET_MESH_STRIPS(self, surf, m_info)
 
         # If the surface has no strips, return empty
         if not mesh_strips:
@@ -232,6 +240,74 @@ class GM2ModelImporter(Operator):
 
         return indices, uvs, normals
 
+    def GET_MESH_STRIPS(self, surf, m_info):
+        surfbuf = surf.surface_data.strip_data
+        mesh_strips = []
+
+        head = 0
+        i_remaining = surf.surface_data.num_vertices
+
+        while i_remaining > 0:
+            command = struct.unpack('>H', surfbuf[head:head+2])[0]
+            num_idx = struct.unpack('>H', surfbuf[head+2:head+4])[0]
+            head += 4
+
+            idxs = []
+            match command:
+                case 0x96:
+                    # unknown what this means, appears in some models
+                    return []
+                case 0x99:
+                    for _ in range(num_idx):
+                        if (self.index_override == "OPT_D" or
+                                (self.index_override == "OPT_A" and m_info.data_obj.v_format is not None)):
+                            ibuf = surfbuf[head:head+11]
+                            head += 11
+
+                            idx = struct.unpack('>H', ibuf[0:2])[0]
+                            norm = tuple((ibuf[2], ibuf[3], ibuf[4]))
+                            u = struct.unpack('>h', ibuf[7:9])[0]
+                            v = struct.unpack('>h', ibuf[9:11])[0]
+                        else:
+                            if (self.index_override == "OPT_C" or
+                                    (self.index_override == "OPT_A" and get_tristrip_format(surf, num_idx) == 1)):
+                                ibuf = surfbuf[head+2:head+11]
+                                head += 11
+                            else:
+                                ibuf = surfbuf[head:head+9]
+                                head += 9
+
+                            idx = struct.unpack('>H', ibuf[0:2])[0]
+                            norm = tuple((ibuf[2], ibuf[3], ibuf[4]))
+                            u = struct.unpack('>h', ibuf[5:7])[0]
+                            v = struct.unpack('>h', ibuf[7:9])[0]
+
+                        if len(m_info.data_obj.v_data.v_buffer) >= idx - 1:
+                            idxs.append(Gm2Idx(idx, u, v, norm))
+                        else:
+                            return []
+                case _:
+                    print(f"ERR: unk_0 = {hex(command)}")
+                    return []
+
+            if len(idxs) <= 0:
+                return []
+
+            for i in range(num_idx-2):
+                if idxs[i] != idxs[i+1] and idxs[i] != idxs[i+2] and idxs[i+1] != idxs[i+2]:
+                    if i % 2 == 0:
+                        mesh_strips.append(idxs[i])
+                        mesh_strips.append(idxs[i+1])
+                        mesh_strips.append(idxs[i+2])
+                    else:
+                        mesh_strips.append(idxs[i])
+                        mesh_strips.append(idxs[i+2])
+                        mesh_strips.append(idxs[i+1])
+
+            i_remaining -= num_idx
+
+        return mesh_strips
+
     def get_skin_data(self, surf):
         skin_name = ""
 
@@ -249,18 +325,18 @@ class GM2ModelImporter(Operator):
             bone_model = bpy.context.active_object
 
         for i, bone in enumerate(bones):
-            new_bone = GM2ObjectCreator.create_object(self, context, bone, self.up_axis)
+            new_bone = GM2ObjectCreator.CREATE_OBJECT(self, context, bone)
 
             # Append the bone to the object and junk object lists
-            GM2ModelImporter.junk_objs[bone.obj] = new_bone
-            GM2ModelImporter.obj_list[bone.obj] = new_bone
+            GM2ModelImporter.junk_objs[bone.data_obj] = new_bone
+            GM2ModelImporter.obj_list[bone.data_obj] = new_bone
 
             if bone.parent_obj is not None:
                 new_bone.parent = GM2ModelImporter.obj_list[bone.parent_obj]
                 new_bone.parent = GM2ModelImporter.junk_objs[bone.parent_obj]
 
             # Create a temporary armature for all the bones
-            temp_arm = GM2ObjectCreator.create_bone(self, context, bone, new_bone)
+            temp_arm = GM2ObjectCreator.CREATE_BONE(self, context, bone, new_bone)
 
             # Append the temporary armature to a list
             GM2ModelImporter.temp_arm_list[temp_arm.name] = temp_arm
@@ -291,7 +367,7 @@ class GM2ModelImporter(Operator):
         all_bones = context.view_layer.objects.active.data.edit_bones
         for bone in bones:
             if bone.parent_obj is not None:
-                all_bones[bone.obj.name].parent = all_bones[bone.parent_obj.name]
+                all_bones[bone.data_obj.name].parent = all_bones[bone.parent_obj.name]
 
         # Switch to pose mode
         bpy.ops.object.mode_set(mode="POSE")
@@ -327,23 +403,23 @@ class GM2ModelImporter(Operator):
         return combined_armature
 
     # Cleans up Blender by deleting unneeded assets
-    def cleanup_imported(self, context, process_obj_list, root_armature):
+    def cleanup_imported(self, context, m_info_list, root_armature):
         if self.import_models:
             # Deselect everything
             bpy.ops.object.mode_set(mode="OBJECT")
             bpy.ops.object.select_all(action='DESELECT')
 
-            for obj in process_obj_list:
-                if obj.parent_obj is not None and obj.parent_obj in GM2ModelImporter.junk_objs:
-                    bpy.data.objects[GM2ModelImporter.obj_list[obj.obj].name].select_set(True)
+            for m_info in m_info_list:
+                if m_info.parent_obj is not None and m_info.parent_obj in GM2ModelImporter.junk_objs:
+                    bpy.data.objects[GM2ModelImporter.obj_list[m_info.data_obj].name].select_set(True)
 
-                    parent_name = GM2ModelImporter.obj_list[obj.parent_obj].name
+                    parent_name = GM2ModelImporter.obj_list[m_info.parent_obj].name
                     context.view_layer.objects.active = root_armature
                     root_armature.data.bones.active = root_armature.data.bones[parent_name]
 
                     bpy.ops.object.parent_set(type='BONE', keep_transform=True)
 
-                    bpy.data.objects[GM2ModelImporter.obj_list[obj.obj].name].select_set(False)
+                    bpy.data.objects[GM2ModelImporter.obj_list[m_info.data_obj].name].select_set(False)
 
             # Clear the junk object list
             for junk_obj in GM2ModelImporter.junk_objs:
@@ -351,71 +427,3 @@ class GM2ModelImporter(Operator):
                 bpy.data.objects[junk_obj.name].select_set(True)
 
             bpy.ops.object.delete(use_global=False, confirm=False)
-
-    def get_mesh_strips(self, surf, processed_obj):
-        surfbuf = surf.surface_data.strip_data
-        mesh_strips = []
-
-        head = 0
-        i_remaining = surf.surface_data.num_vertices
-
-        while i_remaining > 0:
-            command = struct.unpack('>H', surfbuf[head:head + 2])[0]
-            num_idx = struct.unpack('>H', surfbuf[head + 2:head + 4])[0]
-            head += 4
-
-            idxs = []
-            match command:
-                case 0x96:
-                    # unknown what this means, appears in some models
-                    return []
-                case 0x99:
-                    for _ in range(num_idx):
-                        if (self.index_override == "OPT_D" or
-                                (self.index_override == "OPT_A" and processed_obj.obj.v_format is not None)):
-                            ibuf = surfbuf[head:head + 11]
-                            head += 11
-
-                            idx = struct.unpack('>H', ibuf[0:2])[0]
-                            norm = tuple((ibuf[2], ibuf[3], ibuf[4]))
-                            u = struct.unpack('>h', ibuf[7:9])[0]
-                            v = struct.unpack('>h', ibuf[9:11])[0]
-                        else:
-                            if (self.index_override == "OPT_C" or
-                                    (self.index_override == "OPT_A" and get_tristrip_format(surf, num_idx) == 1)):
-                                ibuf = surfbuf[head + 2:head + 11]
-                                head += 11
-                            else:
-                                ibuf = surfbuf[head:head + 9]
-                                head += 9
-
-                            idx = struct.unpack('>H', ibuf[0:2])[0]
-                            norm = tuple((ibuf[2], ibuf[3], ibuf[4]))
-                            u = struct.unpack('>h', ibuf[5:7])[0]
-                            v = struct.unpack('>h', ibuf[7:9])[0]
-
-                        if len(processed_obj.obj.v_data.v_buffer) >= idx - 1:
-                            idxs.append(Gm2Idx(idx, u, v, norm))
-                        else:
-                            return []
-                case _:
-                    print(f"ERR: unk_0 == {hex(command)}")
-                    return []
-
-            if len(idxs) <= 0:
-                return []
-
-            for i in range(num_idx - 2):
-                if idxs[i] != idxs[i + 1] and idxs[i] != idxs[i + 2] and idxs[i + 1] != idxs[i + 2]:
-                    if i % 2 == 0:
-                        mesh_strips.append(idxs[i])
-                        mesh_strips.append(idxs[i + 1])
-                        mesh_strips.append(idxs[i + 2])
-                    else:
-                        mesh_strips.append(idxs[i])
-                        mesh_strips.append(idxs[i + 2])
-                        mesh_strips.append(idxs[i + 1])
-
-            i_remaining -= num_idx
-
-        return mesh_strips
