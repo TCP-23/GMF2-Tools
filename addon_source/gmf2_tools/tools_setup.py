@@ -2,10 +2,12 @@ import bpy
 
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ExportHelper
 
 from bpy.props import BoolProperty, StringProperty, EnumProperty, FloatProperty
 
 from .gmf2_importer import GM2ModelImporter
+from .gmf2_exporter import GM2ModelExporter
 from .gan2_importer import GA2AnimImporter
 
 
@@ -72,6 +74,38 @@ class GMF2_Setup(Operator, ImportHelper):
 
     def start_plugin(self, context, filepath):
         GM2ModelImporter.load_file_data(self, context, filepath)
+
+    def execute(self, context):
+        self.start_plugin(context, self.filepath)
+
+        return {'FINISHED'}
+
+
+class GMF2_EX_Setup(Operator, ExportHelper):
+    bl_idname = "gm2_exporter.setup"
+    bl_label = "Export GMF2 model"
+
+    filename_ext = ".GM2"
+
+    game_format: EnumProperty(
+        name="Target Game",
+        description="",
+        items=(
+            ('OPT_A', "NMH1", ""),
+            ('OPT_B', "NMH2(unsupported)", ""),
+            ('OPT_C', "BLOOD+(unsupported)", ""),
+        ),
+        default='OPT_A'
+    )
+
+    selected_only: BoolProperty(
+        name="Selected Only",
+        description="Only export the selected objects",
+        default=False
+    )
+
+    def start_plugin(self, context, filepath):
+        GM2ModelExporter.write_gmf2(self, context, filepath)
 
     def execute(self, context):
         self.start_plugin(context, self.filepath)

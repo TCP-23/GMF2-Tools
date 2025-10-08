@@ -424,6 +424,8 @@ class GM2ModelImporter(Operator):
             # Clear the junk object list
             for junk_obj in GM2ModelImporter.junk_objs:
                 GM2ModelImporter.junk_objs[junk_obj].data.user_clear()
-                bpy.data.objects[junk_obj.name].select_set(True)
+                bpy.data.objects[GM2ModelImporter.junk_objs[junk_obj].name].select_set(True)
+
+            GM2ModelImporter.junk_objs.clear()
 
             bpy.ops.object.delete(use_global=False, confirm=False)
