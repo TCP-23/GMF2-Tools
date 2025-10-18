@@ -1,4 +1,7 @@
 import bpy
+from .export_object import exportObjects
+from .export_object import exportTextures
+from .export_object import exportMaterials
 
 
 def float_to_short(f):
@@ -16,6 +19,7 @@ def float_vector_to_short_vector(f_vector):
 def short_vector_to_float_vector(s_vector):
     return tuple((short_to_float(s_vector.x), short_to_float(s_vector.y), short_to_float(s_vector.z)))
 
+
 class ProcessBObject(Operator):
     def get_objects(self, context):
         if self.selected_only:
@@ -25,9 +29,6 @@ class ProcessBObject(Operator):
 
     def get_meshes(self, context):
         b_objs = []
-        b_meshes = []
-
-        v_buffers = {}
 
         if self.selected_only:
             b_objs = context.selected_objects
@@ -35,23 +36,30 @@ class ProcessBObject(Operator):
             b_objs = context.scene.objects
 
         for obj in b_objs:
+            exportObjects[obj.name] = {}
             if type(obj.data) is bpy.types.Mesh:
-                b_meshes.append(obj.data)
+                exportObjects[obj.name]["mesh"] = obj.data
+                # TODO: Triangulate all the mesh faces
 
-        # TODO: Triangulate all the mesh faces
-
-        for mesh in b_meshes:
-            verts = []
-
-            for vertex in mesh.vertices:
-                for axis in vertex.co:
-                    verts.append(axis)
-
-            v_buffers[mesh.name] = verts
-
-            for tri in mesh.loop_triangles:
-                for vertex in tri.vertices:
+                verts = []
+                for vertex in obj.data.vertices:
                     for axis in vertex.co:
-                        # TODO: append all to a large array of ints
+                        verts.append(axis)
+
+                exportObjects[obj.name]["v_buffer"] = verts
+
+                tri_idxs = []
+                for tri in obj.data.loop_triangles:
+                    for vertex in tri.vertices:
                         # TODO: append array to named collection
-                        pass
+                        tri_idxs.append(vertex.index)
+
+                # TODO: add indices to exportObjects collection
+
+
+class ProcessBTex(Operator):
+    pass
+
+
+class ProcessBMat(Operator):
+    pass

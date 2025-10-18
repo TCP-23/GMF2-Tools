@@ -5,16 +5,10 @@ meta:
   endian: be
   imports: gct0
 
-enums:
-  game_name:
-    0: unk
-    1: blood
-    0x70: nmh1
-    0x80: nmh2
 instances:
-  game_id:
-    enum: game_name
-    value: off_textures
+  game_identifier:
+    pos: 0x70
+    type: u4be
 seq:
   - id: magic
     contents: "GMF2"
@@ -45,15 +39,14 @@ seq:
   - id: unk_0x34
     type: u4le
   
-  # 56B zeros (usually?)
-  - size: 56
+  # 56B zeros
+  - contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  - contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  - contents: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  - contents: [0, 0, 0, 0, 0, 0, 0, 0]
   
-  - id: unk_0x70
-    type: u4le
-    if: game_id == game_name::nmh2
-  
-  - size: 12
-    if: game_id == game_name::nmh2
+  - contents: [255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    if: game_identifier == 0xFFFFFFFF
     
   # --- Content Headers
     
@@ -181,31 +174,16 @@ types:
       material_data:
         seq:
           - contents: [0, 0, 0, 0]
-          - id: off_ramp_data
+          - id: off_texture
             type: u4le
-          - id: off_main_tex
+          - id: unk_3
             type: u4le
-          - id: unk_0xc  # Probably serves the same purpose that unk_0x3c does for the ramp part of the mat
+          - id: unk_4
             type: u4le
-          
-          - id: shaderparams_main_a
+          - id: shaderparams_a
             type: fl_vector4_le
-          - id: shaderparams_main_tint
+          - id: shaderparams_tint
             type: fl_vector4_le
-          
-          - id: off_main_data
-            type: u4le
-          - contents: [0, 0, 0, 0]
-          - id: off_ramp_tex
-            type: u4le
-          - id: unk_0x3c  # Probably serves the same purpose that unk_0xc does for the main part of the mat
-            type: u4le
-          
-          - id: shaderparams_ramp_a  # Always zero?
-            type: fl_vector4_le
-          - id: shaderparams_ramp_tint
-            type: fl_vector4_le
-  
   # --- Objects
   
   world_object:
@@ -248,15 +226,21 @@ types:
         type: fl_vector4_le
       - id: cullbox_size
         type: fl_vector4_le
-        
-      - size: 64
-        if: _root.game_id == game_name::nmh2
+      - id: unk_padding
+        size: 64
+        if: _root.game_identifier == 0xFFFFFFFF
     instances:
+      v_format:
+        io: _root._io
+        pos: off_v_format
+        size: 6
+        if: off_v_format != 0x3f800000 and off_v_format != 0
+
       v_data:
         io: _root._io
         pos: off_v_buf
-        type: vertex_data(off_surfaces + 18, v_divisor, off_v_format)
-        if: off_surfaces != 0  # No surfaces means no vertices
+        type: vertex_data(off_surfaces + 18, v_divisor)
+        if: off_surfaces != 0
       surfaces:
         io: _root._io
         pos: off_surfaces
@@ -272,8 +256,6 @@ types:
             type: u4
           - id: v_divisor
             type: u4
-          - id: off_v_format
-            type: u4
         seq:
           - id: v_buffer
             type:
@@ -284,11 +266,6 @@ types:
             repeat: expr
             repeat-expr: num_verts
         instances:
-          v_format:
-            io: _root._io
-            pos: off_v_format
-            size: 6
-            if: off_v_format != 0x3f800000 and off_v_format != 0
           num_verts:
             io: _root._io
             pos: off_v_count

@@ -118,8 +118,8 @@ class GM2ModelImporter(Operator):
         # Read the data from the GM2 file, and create a variable to hold it
         gm2: Gmf2 = Gmf2.from_file(filepath)
 
-        # Detect the game the file is from (find a better way to do this)
-        if gm2.game_identifier == 4294967295 or gm2.game_identifier == 8:
+        # Detect the game the file is from
+        if gm2.game_id == Gmf2.GameName.nmh2:
             TargetGame.gameId = GameTarget_Enum.NMH2
         else:
             TargetGame.gameId = GameTarget_Enum.NMH1
@@ -222,7 +222,7 @@ class GM2ModelImporter(Operator):
 
         # Loop through every data bit in the strips
         for idx in mesh_strips:
-            normals.append(idx.n)
+            normals.append(tuple((idx.n[0] / pow(2, 10), idx.n[1] / pow(2, 10), idx.n[2] / pow(2, 10))))
             uvs.append(tuple((idx.u / pow(2, 10), -(idx.v / pow(2, 10)) + 1)))
 
         valid_idx_count = 0
@@ -260,7 +260,7 @@ class GM2ModelImporter(Operator):
                 case 0x99:
                     for _ in range(num_idx):
                         if (self.index_override == "OPT_D" or
-                                (self.index_override == "OPT_A" and m_info.data_obj.v_format is not None)):
+                                (self.index_override == "OPT_A" and m_info.data_obj.v_data.v_format is not None)):
                             ibuf = surfbuf[head:head+11]
                             head += 11
 
