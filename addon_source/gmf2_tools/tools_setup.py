@@ -66,9 +66,21 @@ class GMF2_Setup(Operator, ImportHelper):
         default=True
     )
 
+    signed_normals: BoolProperty(
+        name="Use Signed Normals",
+        description="Interpret the normal data inside the model file as signed data",
+        default=True
+    )
+
     display_tails: BoolProperty(
         name="Display Bone Tails",
         description="Generate and display bone tails based on children",
+        default=False
+    )
+
+    create_shader: BoolProperty(
+        name="Apply Custom Shader",
+        description="Apply a custom shader to replicate the look of in-game NMH1 models",
         default=False
     )
 

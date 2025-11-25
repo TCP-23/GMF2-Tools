@@ -265,7 +265,8 @@ class GM2ModelImporter(Operator):
                             head += 11
 
                             idx = struct.unpack('>H', ibuf[0:2])[0]
-                            norm = tuple((ibuf[2], ibuf[3], ibuf[4]))
+                            norm = [ibuf[2], ibuf[3], ibuf[4]]
+                            #norm = tuple((ibuf[2], ibuf[3], ibuf[4]))
                             u = struct.unpack('>h', ibuf[7:9])[0]
                             v = struct.unpack('>h', ibuf[9:11])[0]
                         else:
@@ -278,9 +279,17 @@ class GM2ModelImporter(Operator):
                                 head += 9
 
                             idx = struct.unpack('>H', ibuf[0:2])[0]
-                            norm = tuple((ibuf[2], ibuf[3], ibuf[4]))
+                            norm = [ibuf[2], ibuf[3], ibuf[4]]
+                            #norm = tuple((ibuf[2], ibuf[3], ibuf[4]))
                             u = struct.unpack('>h', ibuf[5:7])[0]
                             v = struct.unpack('>h', ibuf[7:9])[0]
+
+                        if self.signed_normals:
+                            for i in range(0, 2):
+                                if norm[i] > 127:
+                                    norm[i] -= 256
+                        
+                        norm = tuple((norm[0], norm[1], norm[2]))
 
                         if len(m_info.data_obj.v_data.v_buffer) >= idx - 1:
                             idxs.append(Gm2Idx(idx, u, v, norm))
