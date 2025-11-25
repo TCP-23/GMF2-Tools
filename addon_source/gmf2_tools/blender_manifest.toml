@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "gmf2_tools"
-version = "0.6.0"
+version = "0.7.0"
 name = "GMF2 Tools"
 tagline = "Blender extension that allows Blender to import GMF2 models"
 maintainer = "TCP_23"

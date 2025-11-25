@@ -259,28 +259,23 @@ class GM2ModelImporter(Operator):
                     return []
                 case 0x99:
                     for _ in range(num_idx):
-                        if (self.index_override == "OPT_D" or
-                                (self.index_override == "OPT_A" and m_info.data_obj.v_data.v_format is not None)):
+                        if (m_info.data_obj.v_data.v_format is not None):
                             ibuf = surfbuf[head:head+11]
                             head += 11
 
                             idx = struct.unpack('>H', ibuf[0:2])[0]
                             norm = [ibuf[2], ibuf[3], ibuf[4]]
-                            #norm = tuple((ibuf[2], ibuf[3], ibuf[4]))
                             u = struct.unpack('>h', ibuf[7:9])[0]
                             v = struct.unpack('>h', ibuf[9:11])[0]
                         else:
-                            if (self.index_override == "OPT_C" or
-                                    (self.index_override == "OPT_A" and get_tristrip_format(surf, num_idx) == 1)):
+                            if (get_tristrip_format(surf, num_idx) == 1):
                                 ibuf = surfbuf[head+2:head+11]
                                 head += 11
                             else:
                                 ibuf = surfbuf[head:head+9]
                                 head += 9
-
                             idx = struct.unpack('>H', ibuf[0:2])[0]
                             norm = [ibuf[2], ibuf[3], ibuf[4]]
-                            #norm = tuple((ibuf[2], ibuf[3], ibuf[4]))
                             u = struct.unpack('>h', ibuf[5:7])[0]
                             v = struct.unpack('>h', ibuf[7:9])[0]
 

@@ -17,18 +17,6 @@ class GMF2_Setup(Operator, ImportHelper):
 
     filter_glob: StringProperty(default="*.gm2", options={'HIDDEN'})
 
-    index_override: EnumProperty(
-        name="Face Index Override Mode",
-        description="Forces the addon to load the model using a specific index format.\nMess with this if an object won't load using default settings.\n",
-        items=(
-            ('OPT_A', "No override", "Allows the addon to decide what format each model should use"),
-            ('OPT_B', "Index format A", ""),
-            ('OPT_C', "Index format B", ""),
-            ('OPT_D', "Index format C", ""),
-        ),
-        default='OPT_A',
-    )
-
     up_axis: EnumProperty(
         name="Up Axis",
         description="The up axis of the model you are trying to import. \nMess with this if your model imports in the wrong orientation.\n",
@@ -58,12 +46,6 @@ class GMF2_Setup(Operator, ImportHelper):
         min=0.01,
         max=10,
         default=0.1
-    )
-
-    import_normals: BoolProperty(
-        name="Use Imported Normals",
-        description="Use the normals that are packed into the model file",
-        default=True
     )
 
     signed_normals: BoolProperty(
