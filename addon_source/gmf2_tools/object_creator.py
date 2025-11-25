@@ -23,75 +23,79 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
 
     normals = {}
 
-    def create_object(self, context, objData, upAxis):
-        obj_mesh = bpy.data.meshes.new(objData.obj.name)
+    def CREATE_OBJECT(self, context, m_info):
+        obj_mesh = bpy.data.meshes.new(m_info.obj_name)
         new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
 
-        # Scale the position by 0.1
-        position = tuple((objData.obj.position.x * self.imp_scale, objData.obj.position.y * self.imp_scale, objData.obj.position.z * self.imp_scale))
+        # Scale the position by the import scale (default: 0.1)
+        position = tuple((m_info.data_obj.position.x * self.imp_scale, m_info.data_obj.position.y * self.imp_scale,
+                          m_info.data_obj.position.z * self.imp_scale))
         new_obj.location = position
 
         # i should rewrite this bit
-        if (objData.parent_obj is None) and (self.up_axis != 'OPT_C'):
+        if m_info.is_child_obj is False and self.up_axis != 'OPT_C':
             if self.up_axis == 'OPT_A':
-                rotation = tuple((0, objData.obj.rotation.y + math.radians(90), objData.obj.rotation.z))
+                rotation = tuple((0, m_info.data_obj.rotation.y + math.radians(90), m_info.data_obj.rotation.z))
             else:
-                rotation = tuple((math.radians(90), objData.obj.rotation.y, objData.obj.rotation.z))
+                rotation = tuple((math.radians(90), m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
         else:
-            if TargetGame.gameId == GameTarget_Enum.NMH2 and objData.obj.isBone is False:
-                if not objData.parent_obj.isBone:
-                    rotation = tuple((0, objData.obj.rotation.y, objData.obj.rotation.z))
+            if TargetGame.gameId == GameTarget_Enum.NMH2 and m_info.is_bone is False:
+                if not m_info.is_child_of_bone:
+                    rotation = tuple((0, m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
                 else:
-                    rotation = tuple((objData.obj.rotation.x, objData.obj.rotation.y, objData.obj.rotation.z))
+                    rotation = tuple((m_info.data_obj.rotation.x, m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
             else:
-                rotation = tuple((objData.obj.rotation.x, objData.obj.rotation.y, objData.obj.rotation.z))
-
+                rotation = tuple((m_info.data_obj.rotation.x, m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
         new_obj.rotation_euler = rotation
 
         return new_obj
 
-    def create_mesh(self, context, objData, processedData, obj_arm):
-        obj_mesh = bpy.data.meshes.new(objData.obj.name)
+    def CREATE_MESH(self, context, m_info, processed_data, obj_arm):
+        obj_mesh = bpy.data.meshes.new(m_info.obj_name)
         new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
 
-        # Scale the position by 0.1
-        new_obj.location = tuple((objData.obj.position.x * self.imp_scale, objData.obj.position.y * self.imp_scale, objData.obj.position.z * self.imp_scale))
+        # Scale the position by the import scale (default: 0.1)
+        position = tuple((m_info.data_obj.position.x * self.imp_scale, m_info.data_obj.position.y * self.imp_scale,
+                          m_info.data_obj.position.z * self.imp_scale))
+        new_obj.location = position
 
-        if (objData.parent_obj is None) and (self.up_axis != 'OPT_C'):
+        # i should rewrite this bit
+        if m_info.is_child_obj is False and self.up_axis != 'OPT_C':
             if self.up_axis == 'OPT_A':
-                rotation = tuple((0, objData.obj.rotation.y + math.radians(90), objData.obj.rotation.z))
+                rotation = tuple((0, m_info.data_obj.rotation.y + math.radians(90), m_info.data_obj.rotation.z))
             else:
-                rotation = tuple((math.radians(90), objData.obj.rotation.y, objData.obj.rotation.z))
+                rotation = tuple((math.radians(90), m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
         else:
-            if TargetGame.gameId == GameTarget_Enum.NMH2 and objData.obj.isBone is False:
-                if not objData.parent_obj.isBone:
-                    rotation = tuple((0, objData.obj.rotation.y, objData.obj.rotation.z))
+            if TargetGame.gameId == GameTarget_Enum.NMH2 and m_info.is_bone is False:
+                if not m_info.is_child_of_bone:
+                    rotation = tuple((0, m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
                 else:
-                    rotation = tuple((objData.obj.rotation.x, objData.obj.rotation.y, objData.obj.rotation.z))
+                    rotation = tuple((m_info.data_obj.rotation.x, m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
             else:
-                rotation = tuple((objData.obj.rotation.x, objData.obj.rotation.y, objData.obj.rotation.z))
-
+                rotation = tuple((m_info.data_obj.rotation.x, m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
         new_obj.rotation_euler = rotation
 
         if self.import_mats:
-            GM2ObjectCreator.apply_materials(self, new_obj, objData.obj, GCTTextureHandler.mat_list)
+            GM2ObjectCreator.apply_materials(self, new_obj, m_info.data_obj, GCTTextureHandler.mat_list)
 
-        GM2ObjectCreator.create_mesh_vertices(self, new_obj, processedData[0])
+        GM2ObjectCreator.create_mesh_vertices(self, new_obj, processed_data[0])
 
         # Check if the GM2 file contains an armature
         if obj_arm is not None:
-            GM2ObjectCreator.create_skinned_partitions(self, context, new_obj, obj_arm, processedData[1])
+            GM2ObjectCreator.create_skinned_partitions(self, context, new_obj, obj_arm, processed_data[1])
         else:
-            GM2ObjectCreator.create_weight_partitions(self, context, new_obj, processedData[1], processedData[6])
-        GM2ObjectCreator.create_mesh_faces(self, context, new_obj, processedData[1], processedData[2], processedData[3], processedData[5])
+            GM2ObjectCreator.create_weight_partitions(self, context, new_obj, processed_data[1], processed_data[6])
+        GM2ObjectCreator.create_mesh_faces(self, context, new_obj, processed_data[1], processed_data[2],
+                                           processed_data[3], processed_data[5])
 
         # Turn on smooth shading
-        new_obj.data.polygons.foreach_set('use_smooth', [True] * len(new_obj.data.polygons))
+        new_obj.data.polygons.foreach_set('use_smooth', [True]*len(new_obj.data.polygons))
+
         return new_obj
 
-    def create_bone(self, context, boneData, parent_empty):
+    def CREATE_BONE(self, context, m_info, parent_empty):
         # Create a new temporary armature
-        new_arm = bpy.data.armatures.new(f"temp_arm_{boneData.obj.name}")
+        new_arm = bpy.data.armatures.new(f"temp_arm_{m_info.obj_name}")
         arm_obj = object_utils.object_data_add(context, new_arm, operator=None)
 
         arm_obj.parent = parent_empty
@@ -104,20 +108,20 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
             bpy.ops.object.mode_set(mode="EDIT")
 
         # Create a new bone on the temporary armature
-        new_bone = new_arm.edit_bones.new(boneData.obj.name)
+        new_bone = new_arm.edit_bones.new(m_info.obj_name)
 
         new_bone.head = tuple((0, 0, 0))
-        new_bone.tail = tuple((0, 0, self.imp_scale / 4))
+        new_bone.tail = tuple((0, 0, self.imp_scale/4))
 
         # Set the tail position of the bone (bones in GM2 models don't have head positions)
-        if boneData.first_child_obj is not None and boneData.first_child_obj.isBone:
-            new_bone.tail = tuple((boneData.first_child_obj.position.x * self.imp_scale,
-                                   boneData.first_child_obj.position.y * self.imp_scale,
-                                   boneData.first_child_obj.position.z * self.imp_scale))
+        if m_info.has_children and m_info.is_parent_of_bone:
+            new_bone.tail = tuple((m_info.first_child_obj.position.x * self.imp_scale,
+                                   m_info.first_child_obj.position.y * self.imp_scale,
+                                   m_info.first_child_obj.position.z * self.imp_scale))
 
-        # Make sure the bone can't be below the minimum length
-        if new_bone.head == new_bone.tail or new_bone.length <= (self.imp_scale / 10):
-            new_bone.tail = tuple((0, 0, self.imp_scale / 4))
+        # Make sure the bone isn't below the minimum length
+        if new_bone.head == new_bone.tail or new_bone.length <= (self.imp_scale/10):
+            new_bone.tail = tuple ((0, 0, self.imp_scale/4))
 
         # Switch to object mode
         bpy.ops.object.mode_set(mode="OBJECT")

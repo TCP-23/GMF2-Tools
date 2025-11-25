@@ -155,8 +155,8 @@ class GCTTextureHandler(Operator):
     def import_materials(self, context, materials):
         for i, mat in enumerate(materials):
             # Check if the material data has a valid texture
-            if mat.data.off_texture != 0:
-                new_mat = GCTTextureHandler.create_material(self, mat, GCTTextureHandler.tex_list[mat.data.off_texture])
+            if mat.data.off_main_tex != 0:
+                new_mat = GCTTextureHandler.create_material(self, mat, GCTTextureHandler.tex_list[mat.data.off_main_tex])
             else:
                 # Create a material using a fallback texture
                 new_mat = GCTTextureHandler.create_material(self, mat, GCTTextureHandler.get_fallback_texture(self))

@@ -2,6 +2,7 @@
 
 import kaitaistruct
 from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
+from enum import Enum
 
 
 if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
@@ -9,6 +10,12 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
 
 from .gct0 import Gct0
 class Gmf2(KaitaiStruct):
+
+    class GameName(Enum):
+        unk = 0
+        blood = 1
+        nmh1 = 112
+        nmh2 = 128
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
         self._parent = _parent
@@ -39,12 +46,12 @@ class Gmf2(KaitaiStruct):
         self.off_materials = self._io.read_u4le()
         self.unk_0x30 = self._io.read_u4le()
         self.unk_0x34 = self._io.read_u4le()
-        self._unnamed13 = self._io.read_bytes(16)
-        self._unnamed14 = self._io.read_bytes(16)
-        self._unnamed15 = self._io.read_bytes(16)
-        self._unnamed16 = self._io.read_bytes(8)
-        if self.game_identifier == 4294967295 or self.game_identifier == 8:
-            self._unnamed17 = self._io.read_bytes(16)
+        self._unnamed13 = self._io.read_bytes(56)
+        if self.game_id == Gmf2.GameName.nmh2:
+            self.unk_0x70 = self._io.read_u4le()
+
+        if self.game_id == Gmf2.GameName.nmh2:
+            self._unnamed15 = self._io.read_bytes(12)
 
         self.textures = []
         for i in range(self.num_textures):
@@ -85,17 +92,18 @@ class Gmf2(KaitaiStruct):
             self.off_v_format = self._io.read_u4le()
             self.cullbox_position = Gmf2.FlVector4Le(self._io, self, self._root)
             self.cullbox_size = Gmf2.FlVector4Le(self._io, self, self._root)
-            if self._root.game_identifier == 4294967295 or self._root.game_identifier == 8:
-                self.unk_padding = self._io.read_bytes(64)
+            if self._root.game_id == Gmf2.GameName.nmh2:
+                self._unnamed17 = self._io.read_bytes(64)
 
 
         class VertexData(KaitaiStruct):
-            def __init__(self, off_v_count, v_divisor, _io, _parent=None, _root=None):
+            def __init__(self, off_v_count, v_divisor, off_v_format, _io, _parent=None, _root=None):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
                 self.off_v_count = off_v_count
                 self.v_divisor = v_divisor
+                self.off_v_format = off_v_format
                 self._read()
 
             def _read(self):
@@ -107,6 +115,20 @@ class Gmf2(KaitaiStruct):
                     else:
                         self.v_buffer.append(Gmf2.ShortVector(self._io, self, self._root))
 
+
+            @property
+            def v_format(self):
+                if hasattr(self, '_m_v_format'):
+                    return self._m_v_format
+
+                if  ((self.off_v_format != 1065353216) and (self.off_v_format != 0)) :
+                    io = self._root._io
+                    _pos = io.pos()
+                    io.seek(self.off_v_format)
+                    self._m_v_format = io.read_bytes(6)
+                    io.seek(_pos)
+
+                return getattr(self, '_m_v_format', None)
 
             @property
             def num_verts(self):
@@ -282,20 +304,6 @@ class Gmf2(KaitaiStruct):
 
 
         @property
-        def v_format(self):
-            if hasattr(self, '_m_v_format'):
-                return self._m_v_format
-
-            if  ((self.off_v_format != 1065353216) and (self.off_v_format != 0)) :
-                io = self._root._io
-                _pos = io.pos()
-                io.seek(self.off_v_format)
-                self._m_v_format = io.read_bytes(6)
-                io.seek(_pos)
-
-            return getattr(self, '_m_v_format', None)
-
-        @property
         def v_data(self):
             if hasattr(self, '_m_v_data'):
                 return self._m_v_data
@@ -304,7 +312,7 @@ class Gmf2(KaitaiStruct):
                 io = self._root._io
                 _pos = io.pos()
                 io.seek(self.off_v_buf)
-                self._m_v_data = Gmf2.WorldObject.VertexData((self.off_surfaces + 18), self.v_divisor, io, self, self._root)
+                self._m_v_data = Gmf2.WorldObject.VertexData((self.off_surfaces + 18), self.v_divisor, self.off_v_format, io, self, self._root)
                 io.seek(_pos)
 
             return getattr(self, '_m_v_data', None)
@@ -426,11 +434,17 @@ class Gmf2(KaitaiStruct):
                 self._unnamed0 = self._io.read_bytes(4)
                 if not self._unnamed0 == b"\x00\x00\x00\x00":
                     raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00", self._unnamed0, self._io, u"/types/material/types/material_data/seq/0")
-                self.unk_3 = self._io.read_u4le()
-                self.off_texture = self._io.read_u4le()
-                self.unk_4 = self._io.read_u4le()
-                self.shaderparams_a = Gmf2.FlVector4Le(self._io, self, self._root)
-                self.shaderparams_tint = Gmf2.FlVector4Le(self._io, self, self._root)
+                self.off_ramp_data = self._io.read_u4le()
+                self.off_main_tex = self._io.read_u4le()
+                self.unk_0xc = self._io.read_u4le()
+                self.shaderparams_main_a = Gmf2.FlVector4Le(self._io, self, self._root)
+                self.shaderparams_main_tint = Gmf2.FlVector4Le(self._io, self, self._root)
+                self.off_main_data = self._io.read_u4le()
+                self._unnamed7 = self._io.read_bytes(4)
+                self.off_ramp_tex = self._io.read_u4le()
+                self.unk_0x3c = self._io.read_u4le()
+                self.shaderparams_ramp_a = Gmf2.FlVector4Le(self._io, self, self._root)
+                self.shaderparams_ramp_tint = Gmf2.FlVector4Le(self._io, self, self._root)
 
 
         @property
@@ -479,14 +493,11 @@ class Gmf2(KaitaiStruct):
 
 
     @property
-    def game_identifier(self):
-        if hasattr(self, '_m_game_identifier'):
-            return self._m_game_identifier
+    def game_id(self):
+        if hasattr(self, '_m_game_id'):
+            return self._m_game_id
 
-        _pos = self._io.pos()
-        self._io.seek(112)
-        self._m_game_identifier = self._io.read_u4be()
-        self._io.seek(_pos)
-        return getattr(self, '_m_game_identifier', None)
+        self._m_game_id = KaitaiStream.resolve_enum(Gmf2.GameName, self.off_textures)
+        return getattr(self, '_m_game_id', None)
 
 
