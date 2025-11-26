@@ -17,6 +17,18 @@ class GMF2_Setup(Operator, ImportHelper):
 
     filter_glob: StringProperty(default="*.gm2", options={'HIDDEN'})
 
+    version_override: EnumProperty(
+        name="GMF2 Version Override",
+        description="Forces the addon to treat the model as if it were a specific GMF2 version.\n HEAVILY recommended to leave this on 'No override'.\n",
+        items=(
+            ('DEF', "No override", "Allows the addon to determine the model's version."),
+            ('V01', "Version 1 (BLOOD+)", "Currently unsupported"),
+            ('V02', "Version 2 (NMH1)", ""),
+            ('V03', "Version 3 (NMH2)", ""),
+        ),
+        default='DEF',
+    )
+
     up_axis: EnumProperty(
         name="Up Axis",
         description="The up axis of the model you are trying to import. \nMess with this if your model imports in the wrong orientation.\n",

@@ -4,9 +4,6 @@ import bpy
 import struct
 from bpy.types import Operator
 
-from .target_game import GameTarget_Enum
-from .target_game import TargetGame
-
 from .gan2 import Gan2
 from .action_creator import GA2ActionCreator
 

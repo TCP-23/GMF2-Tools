@@ -8,11 +8,9 @@ import math
 import mathutils
 import random
 
+from .gmf2 import Gmf2
+
 from .gct0_handler import GCTTextureHandler
-
-from .target_game import GameTarget_Enum
-from .target_game import TargetGame
-
 
 class GM2ObjectCreator(Operator, AddObjectHelper):
     """Creates object data from a GMF2 file"""
@@ -23,7 +21,7 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
 
     normals = {}
 
-    def CREATE_OBJECT(self, context, m_info):
+    def CREATE_B_OBJECT(self, context, m_info, game_id):
         obj_mesh = bpy.data.meshes.new(m_info.obj_name)
         new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
 
@@ -39,7 +37,7 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
             else:
                 rotation = tuple((math.radians(90), m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
         else:
-            if TargetGame.gameId == GameTarget_Enum.NMH2 and m_info.is_bone is False:
+            if game_id == Gmf2.GameName.nmh2 and m_info.is_bone is False:
                 if not m_info.is_child_of_bone:
                     rotation = tuple((0, m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
                 else:
@@ -49,35 +47,13 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         new_obj.rotation_euler = rotation
 
         return new_obj
-
-    def CREATE_MESH(self, context, m_info, processed_data, obj_arm):
-        obj_mesh = bpy.data.meshes.new(m_info.obj_name)
-        new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
-
-        # Scale the position by the import scale (default: 0.1)
-        position = tuple((m_info.data_obj.position.x * self.imp_scale, m_info.data_obj.position.y * self.imp_scale,
-                          m_info.data_obj.position.z * self.imp_scale))
-        new_obj.location = position
-
-        # i should rewrite this bit
-        if m_info.is_child_obj is False and self.up_axis != 'OPT_C':
-            if self.up_axis == 'OPT_A':
-                rotation = tuple((0, m_info.data_obj.rotation.y + math.radians(90), m_info.data_obj.rotation.z))
-            else:
-                rotation = tuple((math.radians(90), m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
-        else:
-            if TargetGame.gameId == GameTarget_Enum.NMH2 and m_info.is_bone is False:
-                if not m_info.is_child_of_bone:
-                    rotation = tuple((0, m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
-                else:
-                    rotation = tuple((m_info.data_obj.rotation.x, m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
-            else:
-                rotation = tuple((m_info.data_obj.rotation.x, m_info.data_obj.rotation.y, m_info.data_obj.rotation.z))
-        new_obj.rotation_euler = rotation
+    
+    def CREATE_B_MESH(self, context, m_info, game_id, processed_data, obj_arm):
+        new_obj = GM2ObjectCreator.CREATE_B_OBJECT(self, context, m_info, game_id)
 
         if self.import_mats:
             GM2ObjectCreator.apply_materials(self, new_obj, m_info.data_obj, GCTTextureHandler.mat_list)
-
+        
         GM2ObjectCreator.create_mesh_vertices(self, new_obj, processed_data[0])
 
         # Check if the GM2 file contains an armature
@@ -87,13 +63,13 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
             GM2ObjectCreator.create_weight_partitions(self, context, new_obj, processed_data[1], processed_data[6])
         GM2ObjectCreator.create_mesh_faces(self, context, new_obj, processed_data[1], processed_data[2],
                                            processed_data[3], processed_data[5])
-
+        
         # Turn on smooth shading
         new_obj.data.polygons.foreach_set('use_smooth', [True]*len(new_obj.data.polygons))
 
         return new_obj
-
-    def CREATE_BONE(self, context, m_info, parent_empty):
+    
+    def CREATE_B_BONE(self, context, m_info, game_id, parent_empty):
         # Create a new temporary armature
         new_arm = bpy.data.armatures.new(f"temp_arm_{m_info.obj_name}")
         arm_obj = object_utils.object_data_add(context, new_arm, operator=None)
@@ -106,23 +82,23 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         # Switch to edit mode
         if context.active_object.mode != "EDIT":
             bpy.ops.object.mode_set(mode="EDIT")
-
+        
         # Create a new bone on the temporary armature
         new_bone = new_arm.edit_bones.new(m_info.obj_name)
 
         new_bone.head = tuple((0, 0, 0))
-        new_bone.tail = tuple((0, 0, self.imp_scale/4))
+        new_bone.tail = tuple((0, 0, self.imp_scale / 4))
 
         # Set the tail position of the bone (bones in GM2 models don't have head positions)
         if m_info.has_children and m_info.is_parent_of_bone:
             new_bone.tail = tuple((m_info.first_child_obj.position.x * self.imp_scale,
                                    m_info.first_child_obj.position.y * self.imp_scale,
                                    m_info.first_child_obj.position.z * self.imp_scale))
-
+        
         # Make sure the bone isn't below the minimum length
-        if new_bone.head == new_bone.tail or new_bone.length <= (self.imp_scale/10):
-            new_bone.tail = tuple ((0, 0, self.imp_scale/4))
-
+        if new_bone.head == new_bone.tail or new_bone.length <= (self.imp_scale / 10):
+            new_bone.tail = tuple((0, 0, self.imp_scale / 4))
+        
         # Switch to object mode
         bpy.ops.object.mode_set(mode="OBJECT")
 
