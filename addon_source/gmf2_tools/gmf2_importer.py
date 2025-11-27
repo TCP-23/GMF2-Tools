@@ -11,23 +11,6 @@ from .processed_object_data import ModelObjInfo
 Vec3 = namedtuple("Vec3", "x y z")
 Gm2Idx = namedtuple("Gm2Idx", "i u v n")
 
-
-# Used to keep links from the GM2 file when imported into Blender
-"""class ProcessedObject:
-    obj = None
-    parent_obj = None
-    first_child_obj = None
-    prev_obj = None
-    next_obj = None
-
-    def __init__(self, _obj, _parent_obj, _first_child_obj, _prev_obj, _next_obj):
-        self.obj = _obj
-        self.parent_obj = _parent_obj
-        self.first_child_obj = _first_child_obj
-        self.prev_obj = _prev_obj
-        self.next_obj = _next_obj"""
-
-
 # Sorts objects based on their data types, and creates lists of the objects
 def sort_objects(objs):
     sorted_objs = []
@@ -39,40 +22,8 @@ def sort_objects(objs):
     for proc_data in processed_object_data:
         if proc_data.is_bone:
             sorted_bones.append(proc_data)
-        #elif proc_data.has_model_data:
-            #sorted_meshes.append(proc_data)
         else:
             sorted_objs.append(proc_data)
-
-    """# Loop through every object inside the provided list
-    for i, world_object in objs.items():
-        parent, first_child, prev_obj, next_obj = None, None, None, None
-
-        # Get references to linked objects
-        if world_object.off_parent in objs:
-            parent = objs[world_object.off_parent]
-        if world_object.off_first_child in objs:
-            first_child = objs[world_object.off_first_child]
-        if world_object.off_prev in objs:
-            prev_obj = objs[world_object.off_prev]
-        if world_object.off_next in objs:
-            next_obj = objs[world_object.off_next]
-
-        # Create a ProcessedObject
-        processed_obj = ProcessedObject(world_object, parent, first_child, prev_obj, next_obj)
-
-        # Add the ProcessedObject to the appropriate list based on object type
-        if processed_obj.obj.name == "ROOT" and processed_obj.obj.surfaces is None:
-            processed_obj.obj.isBone = True
-            sorted_bones.append(processed_obj)
-            bone_world_objects.append(processed_obj.obj)
-        elif processed_obj.parent_obj in bone_world_objects and processed_obj.obj.surfaces is None:
-            processed_obj.obj.isBone = True
-            sorted_bones.append(processed_obj)
-            bone_world_objects.append(processed_obj.obj)
-        else:
-            processed_obj.obj.isBone = False
-            sorted_objs.append(processed_obj)"""
 
     return sorted_objs, sorted_bones
 

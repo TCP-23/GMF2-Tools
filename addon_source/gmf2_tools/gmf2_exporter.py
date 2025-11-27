@@ -59,19 +59,6 @@ class GM2ModelExporter(Operator):
         file.write(struct.pack('56x'))
 
     def create_tex_headers(self, file):
-        """for tex_idx, tex_name in enumerate(exportTextures.keys()):
-            # Create the header for the texture
-            file.write(struct.pack('@8s', tex_name.encode('shift_jis')))
-
-            file.write(struct.pack('<I', GM2ModelExporter.PLACEHOLDER_NUM))  # offset of previous texture
-            file.write(struct.pack('<I', GM2ModelExporter.PLACEHOLDER_NUM))  # offset of next texture
-
-            file.write(struct.pack('<I', GM2ModelExporter.PLACEHOLDER_NUM))  # offset of the texture's data
-            file.write(struct.pack('<I', tex_idx))  # unknown data (probably texture index)
-            file.write(struct.pack('<I', GM2ModelExporter.PLACEHOLDER_NUM))  # length of the texture's data
-
-            file.write(struct.pack('@4s', GM2ModelExporter.PLACEHOLDER_4STRING.encode('shift_jis')))  # unknown data"""
-
         for tex_idx in range(0, GM2ModelExporter.PLACEHOLDER_COUNT):
             # Create the header for the texture
             file.write(struct.pack('@8s', GM2ModelExporter.PLACEHOLDER_8STRING.encode('shift_jis')))  # texture name
