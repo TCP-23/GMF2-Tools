@@ -8,7 +8,7 @@ Uses code from https://github.com/sevonj/nmh_reverse
 A [Blender](https://www.blender.org) extension that allows Blender to import GMF2 files.
 
 ## Requirements
-- Blender version 4.2 or higher
+- Blender version 4.5.3 or higher
 
 ## Installation
 - Download the extension version you want from the Releases tab on the right (don't unzip!)

@@ -6,7 +6,7 @@ name = "GMF2 Tools"
 tagline = "Blender extension that allows Blender to import GMF2 models"
 maintainer = "TCP_23"
 type = "add-on"
-blender_version_min = "4.2.0"
+blender_version_min = "4.5.3"
 
 website = "https://github.com/TCP-23/GMF2-Tools"
 
