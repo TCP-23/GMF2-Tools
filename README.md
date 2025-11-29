@@ -3,8 +3,6 @@
 > [!NOTE]  
 > See [here](https://sevonj.github.io/ghm_docs/formats/) for documentation on how data is stored in the game files.
 
-Uses code from https://github.com/sevonj/nmh_reverse
-
 A [Blender](https://www.blender.org) extension that allows Blender to import GMF2 files.
 
 ## Requirements
@@ -52,3 +50,6 @@ If you have noticed an error that is not on this list, please report it!
 - Weight Data
 - Animations
 - Blood+ support
+
+## Credits
+Thanks to [sevonj]https://github.com/sevonj for the basis of the GMF2 parser
