@@ -52,4 +52,6 @@ If you have noticed an error that is not on this list, please report it!
 - Blood+ support
 
 ## Credits
-Thanks to [sevonj]https://github.com/sevonj for the basis of the GMF2 parser
+Thanks to [sevonj](https://github.com/sevonj) for the basis of the GMF2 parser
+
+Thanks to [nettleada](https://blenderartists.org/t/gouraud-vertex-n64-ps1-style-shading-via-geometry-nodes-am-i-doing-this-the-hard-way/1395039) for the Gouraud Blender shading implementation (Distrubuted under CC0)
