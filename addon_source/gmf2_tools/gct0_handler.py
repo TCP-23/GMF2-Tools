@@ -19,6 +19,62 @@ def rgb565_to_RGB(colorData):
     return rgb_data
 
 
+def rgba32_texture(gct0_data):
+    BLOCK_W = 4
+    BLOCK_H = 4
+
+    tex_width, tex_height = gct0_data.width, gct0_data.height
+
+    unordered_pix = [0] * tex_width * tex_height * 4
+    decompressed_data = [0] * tex_width * tex_height * 4
+
+    red = []
+    green = []
+    blue = []
+    alpha = []
+
+    row = 0
+    for i in range(len(gct0_data.texture_data)):
+        # Every 16 bytes in a block, update the row
+        if i % 16 == 0:
+            row += 1
+        # If the row is 5, we have finished a block and need to start on the next block
+        if row == 5:
+            row = 1
+
+        # Unpack the channel data into an integer
+        col_chan = int(struct.unpack('>B', gct0_data.texture_data[i:i+1])[0])
+
+        # Determine which color channel is currently stored in i
+        if row == 1 or row == 2:
+            if i % 2 == 0:  # alpha
+                alpha.append(col_chan)
+            else:  # red
+                red.append(col_chan)
+        else:
+            if i % 2 == 0:  # green
+                green.append(col_chan)
+            else:  # blue
+                blue.append(col_chan)
+    
+    pixel_count = int(len(red) / 4)
+    head = 0
+    for i in range(pixel_count):
+        unordered_pix[head] = red[i]
+        unordered_pix[head+1] = green[i]
+        unordered_pix[head+2] = blue[i]
+        unordered_pix[head+3] = alpha[i]
+
+        head += 4
+
+    # column = 0
+    # for i in range(pixel_count):
+    decompressed_data = unordered_pix
+
+
+    return decompressed_data
+
+
 def cmpr_texture_testing(gct0_data):
     BLOCK_W = 8
     BLOCK_H = 8
@@ -116,6 +172,15 @@ def load_rgb5a3_texture(gct0_data):
     return pixel_list
 
 
+def load_rgba32_texture(gct0_data):
+    pixel_list = []
+    texture_data = rgba32_texture(gct0_data)
+    for pix in texture_data:
+        pixel_list.append(pix / 255)
+
+    return pixel_list
+
+
 # Returns a list of pixels using provided CMPR texture data
 def load_cmpr_texture(gct0_data):
     pixel_list = []
@@ -136,14 +201,13 @@ class GCTTextureHandler(Operator):
     def import_textures(self, context, textures):
         for i, tex in enumerate(textures):
             new_btex = None
-            if tex.gct0_texture.encoding != Gct0.TextureEncoding.rgba32:
-                # Check if the texture data is embedded in the model file
-                if "No File" not in str(tex.gct0_texture.texture_data):
-                    # If it is embedded, create a new Blender texture using the data
-                    new_btex = GCTTextureHandler.create_internal_texture(self, tex)
-                else:
-                    # If it is not embedded, create a placeholder texture in its place
-                    new_btex = GCTTextureHandler.create_empty_texture(self, tex.name)
+            # Check if the texture data is embedded in the model file
+            if "No File" not in str(tex.gct0_texture.texture_data):
+                # If it is embedded, create a new Blender texture using the data
+                new_btex = GCTTextureHandler.create_internal_texture(self, tex)
+            else:
+                # If it is not embedded, create a placeholder texture in its place
+                new_btex = GCTTextureHandler.create_empty_texture(self, tex.name)
 
             # If the texture doesn't exist, replace it with the fallback texture
             if new_btex is None:
@@ -220,8 +284,7 @@ class GCTTextureHandler(Operator):
             case Gct0.TextureEncoding.rgb5a3:
                 pixels = load_rgb5a3_texture(tex_data.gct0_texture)
             case Gct0.TextureEncoding.rgba32:
-                # This encoding is currently not supported, so set all the pixels to pure black
-                pixels = [[0, 0, 0, 0]] * img_size[0] * img_size[1]
+                pixels = load_rgba32_texture(tex_data.gct0_texture)
                 pass
             case Gct0.TextureEncoding.cmpr:
                 pixels = load_cmpr_texture(tex_data.gct0_texture)
@@ -256,9 +319,8 @@ class GCTTextureHandler(Operator):
         match gct0_data.encoding:
             case Gct0.TextureEncoding.rgb5a3:
                 pixels = load_rgb5a3_texture(gct0_data)
-            case Gct0.TextureEncoding.rgb5a3:
-                # This encoding is currently not supported, so set all the pixels to pure black
-                pixels = [[0, 0, 0, 0]] * img_size[0] * img_size[1]
+            case Gct0.TextureEncoding.rgba32:
+                pixels = load_rgba32_texture(gct0_data)
                 pass
             case Gct0.TextureEncoding.cmpr:
                 pixels = load_cmpr_texture(gct0_data)
