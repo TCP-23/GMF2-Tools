@@ -1,5 +1,6 @@
 import bpy
 import struct
+import math
 from bpy.types import Operator
 from .gct0 import Gct0
 from .gct0_decompress import *
@@ -19,14 +20,109 @@ def rgb565_to_RGB(colorData):
     return rgb_data
 
 
+def rgb5a3_to_RGBA(colorData):
+    hasAlpha = True if (colorData >> 15) == 1 else False
+    # hasAlpha = (colorData >> 15) & 1
+    if hasAlpha:
+        a = (colorData >> 12) & 7
+        r = (colorData >> 8) & 15
+        g = (colorData >> 4) & 15
+        b = colorData & 15
+
+        rgba_data = tuple((int(r * 255 / 15), int(g * 255 / 15), int(b * 255 / 15), int(a * 255 / 7)))
+    else:
+        a = 255
+        r = (colorData >> 10) & 31
+        g = (colorData >> 5) & 31
+        b = colorData & 31
+
+        rgba_data = tuple((int(r * 255 / 31), int(g * 255 / 31), int(b * 255 / 31), a))
+
+    return rgba_data
+
+
+def pixel_block_mapper(unmapped_data, img_width, img_height, block_width, block_height):
+    mapped_data = []
+
+    width_in_blocks = int(math.ceil(img_width / block_width))
+    width_remainder = img_width % block_width
+
+    height_in_blocks = int(math.ceil(img_height / block_height))
+    height_remainder = img_height % block_height
+
+    w_block_iterator = 1
+    h_block_iterator = 1
+
+    # NONFUNCTIONAL FOR NOW
+    if width_in_blocks > 1:
+        block_loop_w = block_width
+    else:
+        block_loop_w = width_remainder
+    if height_in_blocks > 1:
+        block_loop_h = block_height
+    else:
+        block_loop_h = height_remainder
+    
+    # total_pixel_count = int(len(unmapped_data) / 4)
+    # r = []
+    # g = []
+    # b = []
+    # a = []
+
+    # head = 0
+    # for i in range(0, total_pixel_count):
+    #     r.append(unmapped_data[head])
+    #     g.append(unmapped_data[head+1])
+    #     b.append(unmapped_data[head+2])
+    #     a.append(unmapped_data[head+3])
+
+    #     head += 4
+    
+    pixel = 1
+    # for i in range(1, int((len(unmapped_data) / 4) + 1)):
+    for i in range(1, int(len(unmapped_data) + 1)):
+        index = (pixel - 1) + ((w_block_iterator - 1) * (block_width * block_height))
+        # mapped_data.extend([
+        #     r[index],
+        #     g[index],
+        #     b[index],
+        #     a[index]
+        # ])
+        mapped_data.append(unmapped_data[index])
+
+        if pixel % block_width == 0:
+            if w_block_iterator % width_in_blocks == 0:
+                h_block_iterator += 1
+                w_block_iterator = 1
+            else:
+                w_block_iterator += 1
+            pixel = 1 + ((h_block_iterator - 1) * (block_width))
+        else:
+            pixel += 1
+
+    return mapped_data
+
+
+def rgb5a3_texture(gct0_data):
+    decompressed_data = [0] * gct0_data.width * gct0_data.height * 4
+
+    red = []
+    green = []
+    blue = []
+    alpha = []
+
+    pixel_data_len = int(len(gct0_data.texture_data) / 2)
+    head = 0
+    for i in range(pixel_data_len):
+        pix_data_5a3 = struct.unpack('>H', gct0_data.texture_data[head:head+2])[0]
+
+        head += 2
+
+    return pixel_block_mapper(decompressed_data, gct0_data.width, gct0_data.height, 4, 4)
+
+
 def rgba32_texture(gct0_data):
-    BLOCK_W = 4
-    BLOCK_H = 4
-
-    tex_width, tex_height = gct0_data.width, gct0_data.height
-
-    unordered_pix = [0] * tex_width * tex_height * 4
-    decompressed_data = [0] * tex_width * tex_height * 4
+    decompressed_data = [0] * gct0_data.width * gct0_data.height * 4
 
     red = []
     green = []
@@ -57,22 +153,18 @@ def rgba32_texture(gct0_data):
             else:  # blue
                 blue.append(col_chan)
     
-    pixel_count = int(len(red) / 4)
+    pixel_count = int(len(red) / 4)  # all channels are the same length, so it doesn't matter which one is used here
     head = 0
     for i in range(pixel_count):
-        unordered_pix[head] = red[i]
-        unordered_pix[head+1] = green[i]
-        unordered_pix[head+2] = blue[i]
-        unordered_pix[head+3] = alpha[i]
+        decompressed_data[head] = red[i]
+        decompressed_data[head+1] = green[i]
+        decompressed_data[head+2] = blue[i]
+        decompressed_data[head+3] = alpha[i]
 
         head += 4
 
-    # column = 0
-    # for i in range(pixel_count):
-    decompressed_data = unordered_pix
-
-
-    return decompressed_data
+    # return pixel_block_mapper(decompressed_data, gct0_data.width, gct0_data.height, 4, 4)
+    return pixel_block_mapper(decompressed_data, gct0_data.width, gct0_data.height, 16, 16)
 
 
 def cmpr_texture_testing(gct0_data):
@@ -136,38 +228,11 @@ def cmpr_texture_testing(gct0_data):
     return decompressed_data
 
 
-# Returns a list of pixels using provided RGB5A3 texture data
 def load_rgb5a3_texture(gct0_data):
     pixel_list = []
-
-    texture_data = decompress_rgb5a3_texture(gct0_data)
+    texture_data = rgb5a3_texture(gct0_data)
     for pix in texture_data:
-        try:
-            pixel_list.append(pix[0][0] / 255)
-            pixel_list.append(pix[0][1] / 255)
-            pixel_list.append(pix[0][2] / 255)
-            pixel_list.append(pix[0][3] / 255)
-
-            pixel_list.append(pix[0][0] / 255)
-            pixel_list.append(pix[0][1] / 255)
-            pixel_list.append(pix[0][2] / 255)
-            pixel_list.append(pix[0][3] / 255)
-
-            pixel_list.append(pix[0][0] / 255)
-            pixel_list.append(pix[0][1] / 255)
-            pixel_list.append(pix[0][2] / 255)
-            pixel_list.append(pix[0][3] / 255)
-
-            pixel_list.append(pix[0][0] / 255)
-            pixel_list.append(pix[0][1] / 255)
-            pixel_list.append(pix[0][2] / 255)
-            pixel_list.append(pix[0][3] / 255)
-        except TypeError:
-            print(pix[0])
-            print(pix[1])
-            print(pix[2])
-            print(pix[3])
-            return None
+        pixel_list.append(pix / 255)
 
     return pixel_list
 
@@ -293,7 +358,9 @@ class GCTTextureHandler(Operator):
                 pass
 
         try:
-            bimg.pixels = pixels
+            #bimg.pixels = pixels
+            bimg.pixels.foreach_set(pixels)
+            bimg.update()
         except:
             print(tex_data.name)
             print(len(bimg.pixels))
@@ -328,7 +395,8 @@ class GCTTextureHandler(Operator):
                 print("Texture format not supported (yet)")
                 pass
 
-        bimg.pixels = pixels
+        bimg.pixels.foreach_set(pixels)
+        bimg.update()
 
         # Create a Blender texture and apply the image
         btex = bpy.data.textures.get(tex_name)
