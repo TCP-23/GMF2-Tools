@@ -21,7 +21,7 @@ def rgb565_to_RGB(colorData):
 
 
 def rgb5a3_to_RGBA(colorData):
-    hasAlpha = True if (colorData >> 15) == 1 else False
+    hasAlpha = False if (colorData >> 15) == 1 else True
     # hasAlpha = (colorData >> 15) & 1
     if hasAlpha:
         a = (colorData >> 12) & 7
@@ -29,7 +29,10 @@ def rgb5a3_to_RGBA(colorData):
         g = (colorData >> 4) & 15
         b = colorData & 15
 
-        rgba_data = tuple((int(r * 255 / 15), int(g * 255 / 15), int(b * 255 / 15), int(a * 255 / 7)))
+        test_a = int(a * 255 / 7)
+        if test_a < 26:
+            test_a = 26
+        rgba_data = tuple((int(r * 255 / 15), int(g * 255 / 15), int(b * 255 / 15), test_a))
     else:
         a = 255
         r = (colorData >> 10) & 31
@@ -37,7 +40,7 @@ def rgb5a3_to_RGBA(colorData):
         b = colorData & 31
 
         rgba_data = tuple((int(r * 255 / 31), int(g * 255 / 31), int(b * 255 / 31), a))
-
+    
     return rgba_data
 
 
@@ -62,33 +65,16 @@ def pixel_block_mapper(unmapped_data, img_width, img_height, block_width, block_
         block_loop_h = block_height
     else:
         block_loop_h = height_remainder
-    
-    # total_pixel_count = int(len(unmapped_data) / 4)
-    # r = []
-    # g = []
-    # b = []
-    # a = []
 
-    # head = 0
-    # for i in range(0, total_pixel_count):
-    #     r.append(unmapped_data[head])
-    #     g.append(unmapped_data[head+1])
-    #     b.append(unmapped_data[head+2])
-    #     a.append(unmapped_data[head+3])
-
-    #     head += 4
-    
     pixel = 1
-    # for i in range(1, int((len(unmapped_data) / 4) + 1)):
-    for i in range(1, int(len(unmapped_data) + 1)):
+    for i in range(1, int((len(unmapped_data) / 4) + 1)):
         index = (pixel - 1) + ((w_block_iterator - 1) * (block_width * block_height))
-        # mapped_data.extend([
-        #     r[index],
-        #     g[index],
-        #     b[index],
-        #     a[index]
-        # ])
-        mapped_data.append(unmapped_data[index])
+        mapped_data.extend([
+            unmapped_data[(index * 4)],  # red
+            unmapped_data[(index * 4) + 1],  # green
+            unmapped_data[(index * 4) + 2],  # blue
+            unmapped_data[(index * 4) + 3]  # alpha
+        ])
 
         if pixel % block_width == 0:
             if w_block_iterator % width_in_blocks == 0:
@@ -99,6 +85,14 @@ def pixel_block_mapper(unmapped_data, img_width, img_height, block_width, block_
             pixel = 1 + ((h_block_iterator - 1) * (block_width))
         else:
             pixel += 1
+
+    for y in range(img_height // 2):
+        for x in range(img_width):
+            index_top = (y * img_width + x) * 4
+            index_bottom = ((img_height - y - 1) * img_width + x) * 4
+
+            mapped_data[index_top:index_top + 4], mapped_data[index_bottom:index_bottom + 4] = \
+                mapped_data[index_bottom:index_bottom + 4], mapped_data[index_top:index_top + 4]
 
     return mapped_data
 
@@ -113,12 +107,32 @@ def rgb5a3_texture(gct0_data):
 
     pixel_data_len = int(len(gct0_data.texture_data) / 2)
     head = 0
-    for i in range(pixel_data_len):
-        pix_data_5a3 = struct.unpack('>H', gct0_data.texture_data[head:head+2])[0]
 
+    for i in range(0, pixel_data_len):
+        pix_data_5a3 = struct.unpack('>H', gct0_data.texture_data[head:head+2])[0]
         head += 2
 
+        pix_data_rgb = rgb5a3_to_RGBA(pix_data_5a3)
+        # if i == 0:
+        #     print(pix_data_5a3)
+        #     print(pix_data_rgb)
+
+        red.append(pix_data_rgb[0])
+        green.append(pix_data_rgb[1])
+        blue.append(pix_data_rgb[2])
+        alpha.append(pix_data_rgb[3])
+
+    head_2 = 0
+    for i in range(int(len(red))):
+        decompressed_data[head_2] = red[i]
+        decompressed_data[head_2+1] = green[i]
+        decompressed_data[head_2+2] = blue[i]
+        decompressed_data[head_2+3] = alpha[i]
+
+        head_2 += 4
+
     return pixel_block_mapper(decompressed_data, gct0_data.width, gct0_data.height, 4, 4)
+    #return decompressed_data
 
 
 def rgba32_texture(gct0_data):
@@ -163,8 +177,12 @@ def rgba32_texture(gct0_data):
 
         head += 4
 
-    # return pixel_block_mapper(decompressed_data, gct0_data.width, gct0_data.height, 4, 4)
-    return pixel_block_mapper(decompressed_data, gct0_data.width, gct0_data.height, 16, 16)
+    return pixel_block_mapper(decompressed_data, gct0_data.width, gct0_data.height, 4, 4)
+    # return pixel_block_mapper(decompressed_data, gct0_data.width, gct0_data.height, 16, 16)
+
+
+def cmpr_texture(gct0_data):
+    decompressed_data = [0] * gct0_data.width * gct0_data.height * 4
 
 
 def cmpr_texture_testing(gct0_data):
@@ -233,6 +251,9 @@ def load_rgb5a3_texture(gct0_data):
     texture_data = rgb5a3_texture(gct0_data)
     for pix in texture_data:
         pixel_list.append(pix / 255)
+        #print(pix / 255)
+    
+    print(len(pixel_list))
 
     return pixel_list
 
@@ -249,7 +270,6 @@ def load_rgba32_texture(gct0_data):
 # Returns a list of pixels using provided CMPR texture data
 def load_cmpr_texture(gct0_data):
     pixel_list = []
-
     texture_data = cmpr_texture_testing(gct0_data)
     for pix in texture_data:
         pixel_list.append(pix / 255)
@@ -273,6 +293,9 @@ class GCTTextureHandler(Operator):
             else:
                 # If it is not embedded, create a placeholder texture in its place
                 new_btex = GCTTextureHandler.create_empty_texture(self, tex.name)
+            
+            # if tex.name == "HT_TREEL":
+            #     new_btex = GCTTextureHandler.create_internal_texture(self, tex)
 
             # If the texture doesn't exist, replace it with the fallback texture
             if new_btex is None:
@@ -350,7 +373,6 @@ class GCTTextureHandler(Operator):
                 pixels = load_rgb5a3_texture(tex_data.gct0_texture)
             case Gct0.TextureEncoding.rgba32:
                 pixels = load_rgba32_texture(tex_data.gct0_texture)
-                pass
             case Gct0.TextureEncoding.cmpr:
                 pixels = load_cmpr_texture(tex_data.gct0_texture)
             case _:
@@ -388,7 +410,6 @@ class GCTTextureHandler(Operator):
                 pixels = load_rgb5a3_texture(gct0_data)
             case Gct0.TextureEncoding.rgba32:
                 pixels = load_rgba32_texture(gct0_data)
-                pass
             case Gct0.TextureEncoding.cmpr:
                 pixels = load_cmpr_texture(gct0_data)
             case _:
