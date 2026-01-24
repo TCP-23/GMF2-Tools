@@ -22,7 +22,6 @@ def rgb565_to_RGB(colorData):
 
 def rgb5a3_to_RGBA(colorData):
     hasAlpha = False if (colorData >> 15) == 1 else True
-    # hasAlpha = (colorData >> 15) & 1
     if hasAlpha:
         a = (colorData >> 12) & 7
         r = (colorData >> 8) & 15
@@ -55,6 +54,7 @@ def pixel_block_mapper(unmapped_data, img_width, img_height, block_width, block_
 
     w_block_iterator = 1
     h_block_iterator = 1
+    block_row_iterator = 1
 
     # NONFUNCTIONAL FOR NOW
     if width_in_blocks > 1:
@@ -68,7 +68,8 @@ def pixel_block_mapper(unmapped_data, img_width, img_height, block_width, block_
 
     pixel = 1
     for i in range(1, int((len(unmapped_data) / 4) + 1)):
-        index = (pixel - 1) + ((w_block_iterator - 1) * (block_width * block_height))
+        #index = (pixel - 1) + ((w_block_iterator - 1) * ((block_width * block_height) * h_block_iterator))
+        index = (pixel - 1) + ((w_block_iterator - 1) * (block_width * block_height)) + ((block_width * block_height) * ((h_block_iterator - 1) * width_in_blocks))
         mapped_data.extend([
             unmapped_data[(index * 4)],  # red
             unmapped_data[(index * 4) + 1],  # green
@@ -78,11 +79,15 @@ def pixel_block_mapper(unmapped_data, img_width, img_height, block_width, block_
 
         if pixel % block_width == 0:
             if w_block_iterator % width_in_blocks == 0:
-                h_block_iterator += 1
+                if block_row_iterator == block_height:
+                    h_block_iterator += 1
+                    block_row_iterator = 1
+                else:
+                    block_row_iterator += 1
                 w_block_iterator = 1
             else:
                 w_block_iterator += 1
-            pixel = 1 + ((h_block_iterator - 1) * (block_width))
+            pixel = 1 + ((block_row_iterator - 1) * (block_width))
         else:
             pixel += 1
 
@@ -113,9 +118,6 @@ def rgb5a3_texture(gct0_data):
         head += 2
 
         pix_data_rgb = rgb5a3_to_RGBA(pix_data_5a3)
-        # if i == 0:
-        #     print(pix_data_5a3)
-        #     print(pix_data_rgb)
 
         red.append(pix_data_rgb[0])
         green.append(pix_data_rgb[1])
@@ -132,7 +134,6 @@ def rgb5a3_texture(gct0_data):
         head_2 += 4
 
     return pixel_block_mapper(decompressed_data, gct0_data.width, gct0_data.height, 4, 4)
-    #return decompressed_data
 
 
 def rgba32_texture(gct0_data):
@@ -178,7 +179,6 @@ def rgba32_texture(gct0_data):
         head += 4
 
     return pixel_block_mapper(decompressed_data, gct0_data.width, gct0_data.height, 4, 4)
-    # return pixel_block_mapper(decompressed_data, gct0_data.width, gct0_data.height, 16, 16)
 
 
 def cmpr_texture(gct0_data):
