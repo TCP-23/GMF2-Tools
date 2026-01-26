@@ -3,7 +3,6 @@ import struct
 import math
 from bpy.types import Operator
 from .gct0 import Gct0
-from .gct0_decompress import *
 
 CMPR_BLOCK_SIZE = 8
 CMPR_SUBBLOCK_SIZE = 4
@@ -28,10 +27,7 @@ def rgb5a3_to_RGBA(colorData):
         g = (colorData >> 4) & 15
         b = colorData & 15
 
-        test_a = int(a * 255 / 7)
-        if test_a < 26:
-            test_a = 26
-        rgba_data = tuple((int(r * 255 / 15), int(g * 255 / 15), int(b * 255 / 15), test_a))
+        rgba_data = tuple((int(r * 255 / 15), int(g * 255 / 15), int(b * 255 / 15), int(a * 255 / 7)))
     else:
         a = 255
         r = (colorData >> 10) & 31
@@ -68,7 +64,6 @@ def pixel_block_mapper(unmapped_data, img_width, img_height, block_width, block_
 
     pixel = 1
     for i in range(1, int((len(unmapped_data) / 4) + 1)):
-        #index = (pixel - 1) + ((w_block_iterator - 1) * ((block_width * block_height) * h_block_iterator))
         index = (pixel - 1) + ((w_block_iterator - 1) * (block_width * block_height)) + ((block_width * block_height) * ((h_block_iterator - 1) * width_in_blocks))
         mapped_data.extend([
             unmapped_data[(index * 4)],  # red
@@ -103,14 +98,14 @@ def pixel_block_mapper(unmapped_data, img_width, img_height, block_width, block_
 
 
 def rgb5a3_texture(gct0_data):
-    decompressed_data = [0] * gct0_data.width * gct0_data.height * 4
+    color_data = []
 
-    red = []
-    green = []
-    blue = []
-    alpha = []
-
+    expected_data_len = gct0_data.width * gct0_data.height
     pixel_data_len = int(len(gct0_data.texture_data) / 2)
+    if (pixel_data_len > expected_data_len):
+        print("Pixel data longer than expected. Automatically truncating.")
+        pixel_data_len = expected_data_len
+
     head = 0
 
     for i in range(0, pixel_data_len):
@@ -119,21 +114,14 @@ def rgb5a3_texture(gct0_data):
 
         pix_data_rgb = rgb5a3_to_RGBA(pix_data_5a3)
 
-        red.append(pix_data_rgb[0])
-        green.append(pix_data_rgb[1])
-        blue.append(pix_data_rgb[2])
-        alpha.append(pix_data_rgb[3])
+        color_data.extend([
+            pix_data_rgb[0],
+            pix_data_rgb[1],
+            pix_data_rgb[2],
+            pix_data_rgb[3]
+        ])
 
-    head_2 = 0
-    for i in range(int(len(red))):
-        decompressed_data[head_2] = red[i]
-        decompressed_data[head_2+1] = green[i]
-        decompressed_data[head_2+2] = blue[i]
-        decompressed_data[head_2+3] = alpha[i]
-
-        head_2 += 4
-
-    return pixel_block_mapper(decompressed_data, gct0_data.width, gct0_data.height, 4, 4)
+    return pixel_block_mapper(color_data, gct0_data.width, gct0_data.height, 4, 4)
 
 
 def rgba32_texture(gct0_data):
@@ -293,9 +281,6 @@ class GCTTextureHandler(Operator):
             else:
                 # If it is not embedded, create a placeholder texture in its place
                 new_btex = GCTTextureHandler.create_empty_texture(self, tex.name)
-            
-            # if tex.name == "HT_TREEL":
-            #     new_btex = GCTTextureHandler.create_internal_texture(self, tex)
 
             # If the texture doesn't exist, replace it with the fallback texture
             if new_btex is None:
