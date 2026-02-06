@@ -170,13 +170,6 @@ class GAN2_Setup(Operator, ImportHelper):
         return {'FINISHED'}
 
 
-class RMHG_Setup(Operator, ImportHelper):
-    bl_idname = "ghman_tools.rsl_setup"
-    bl_label = "Import RMHG Archive"
-
-    filter_glob: StringProperty(default="*.rsl", options={'HIDDEN'})
-
-
 class AddonWikiPanel(bpy.types.Panel):
     bl_idname = "addon_wiki.wiki"
 

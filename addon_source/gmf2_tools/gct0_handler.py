@@ -85,29 +85,43 @@ def pixel_block_mapper(unmapped_data, img_width, img_height, block_width, block_
             pixel = 1 + ((block_row_iterator - 1) * (block_width))
         else:
             pixel += 1
+        
+    #return mapped_data
+    return mirror_texture_y(mapped_data, img_width, img_height)
 
-    for y in range(img_height // 2):
-        for x in range(img_width):
-            index_top = (y * img_width + x) * 4
-            index_bottom = ((img_height - y - 1) * img_width + x) * 4
 
-            mapped_data[index_top:index_top + 4], mapped_data[index_bottom:index_bottom + 4] = \
-                mapped_data[index_bottom:index_bottom + 4], mapped_data[index_top:index_top + 4]
+# Mirrors the provided pixel data to match Blender's dimension grid
+def mirror_texture_y(unmirrored_data, img_width, img_height):
+    x_iter = 0
+    y_iter = 0
 
-    return mapped_data
+    for pix_idx in range((img_width * img_height) // 2):
+        index_top = (y_iter * img_width + x_iter) * 4
+        index_bottom = ((img_height - y_iter - 1) * img_width + x_iter) * 4
+
+        x_iter += 1
+        if (x_iter % img_width == 0):
+            y_iter += 1
+            x_iter = 0
+
+        unmirrored_data[index_top:index_top + 4], unmirrored_data[index_bottom:index_bottom + 4] = \
+            unmirrored_data[index_bottom:index_bottom + 4], unmirrored_data[index_top:index_top + 4]
+    
+    return unmirrored_data
 
 
 def rgb5a3_texture(gct0_data):
     color_data = []
 
-    expected_data_len = gct0_data.width * gct0_data.height
+    # expected_data_len = gct0_data.width * gct0_data.height
+    # pixel_data_len = int(len(gct0_data.texture_data) / 2)
+    # if (pixel_data_len > expected_data_len):
+    #     print("Pixel data longer than expected. Automatically truncating.")
+    #     pixel_data_len = expected_data_len
+    
     pixel_data_len = int(len(gct0_data.texture_data) / 2)
-    if (pixel_data_len > expected_data_len):
-        print("Pixel data longer than expected. Automatically truncating.")
-        pixel_data_len = expected_data_len
 
     head = 0
-
     for i in range(0, pixel_data_len):
         pix_data_5a3 = struct.unpack('>H', gct0_data.texture_data[head:head+2])[0]
         head += 2
@@ -132,8 +146,16 @@ def rgba32_texture(gct0_data):
     blue = []
     alpha = []
 
+    # expected_data_len = gct0_data.width * gct0_data.height
+    # pixel_data_len = int(len(gct0_data.texture_data))
+    # if (pixel_data_len > expected_data_len):
+    #     print("Pixel data longer than expected. Automatically truncating.")
+    #     pixel_data_len = expected_data_len
+
+    pixel_data_len = int(len(gct0_data.texture_data))
+
     row = 0
-    for i in range(len(gct0_data.texture_data)):
+    for i in range(pixel_data_len):
         # Every 16 bytes in a block, update the row
         if i % 16 == 0:
             row += 1
@@ -156,9 +178,9 @@ def rgba32_texture(gct0_data):
             else:  # blue
                 blue.append(col_chan)
     
-    pixel_count = int(len(red) / 4)  # all channels are the same length, so it doesn't matter which one is used here
     head = 0
-    for i in range(pixel_count):
+
+    for i in range(int(len(red))):  # all channels are the same length, so it doesn't matter which one is used here
         decompressed_data[head] = red[i]
         decompressed_data[head+1] = green[i]
         decompressed_data[head+2] = blue[i]
@@ -223,15 +245,7 @@ def cmpr_texture_testing(gct0_data):
                                 decompressed_data[index:index + 4] = color_map[
                                     (color_pattern >> (6 - (sub_x_offset * 2))) & 3]
 
-    for y in range(tex_height // 2):
-        for x in range(tex_width):
-            index_top = (y * tex_width + x) * 4
-            index_bottom = ((tex_height - y - 1) * tex_width + x) * 4
-
-            decompressed_data[index_top:index_top + 4], decompressed_data[index_bottom:index_bottom + 4] = \
-                decompressed_data[index_bottom:index_bottom + 4], decompressed_data[index_top:index_top + 4]
-
-    return decompressed_data
+    return mirror_texture_y(decompressed_data, tex_width, tex_height)
 
 
 def load_rgb5a3_texture(gct0_data):
@@ -239,7 +253,6 @@ def load_rgb5a3_texture(gct0_data):
     texture_data = rgb5a3_texture(gct0_data)
     for pix in texture_data:
         pixel_list.append(pix / 255)
-        #print(pix / 255)
     
     print(len(pixel_list))
 
@@ -274,6 +287,8 @@ class GCTTextureHandler(Operator):
     def import_textures(self, context, textures):
         for i, tex in enumerate(textures):
             new_btex = None
+
+            #if tex.name == "HT_TREEL":
             # Check if the texture data is embedded in the model file
             if "No File" not in str(tex.gct0_texture.texture_data):
                 # If it is embedded, create a new Blender texture using the data
