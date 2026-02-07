@@ -113,13 +113,12 @@ def mirror_texture_y(unmirrored_data, img_width, img_height):
 def rgb5a3_texture(gct0_data):
     color_data = []
 
-    # expected_data_len = gct0_data.width * gct0_data.height
-    # pixel_data_len = int(len(gct0_data.texture_data) / 2)
-    # if (pixel_data_len > expected_data_len):
-    #     print("Pixel data longer than expected. Automatically truncating.")
-    #     pixel_data_len = expected_data_len
-    
+    expected_data_len = gct0_data.width * gct0_data.height
     pixel_data_len = int(len(gct0_data.texture_data) / 2)
+    if (pixel_data_len != expected_data_len):
+        print(f"Texture data length mismatch! Expected length: {expected_data_len}. Actual length: {pixel_data_len}.")
+        print(f"Skipping texture [TEX_NAME]")
+        return "ERROR_FLAG"
 
     head = 0
     for i in range(0, pixel_data_len):
@@ -146,13 +145,12 @@ def rgba32_texture(gct0_data):
     blue = []
     alpha = []
 
-    # expected_data_len = gct0_data.width * gct0_data.height
-    # pixel_data_len = int(len(gct0_data.texture_data))
-    # if (pixel_data_len > expected_data_len):
-    #     print("Pixel data longer than expected. Automatically truncating.")
-    #     pixel_data_len = expected_data_len
-
+    expected_data_len = gct0_data.width * gct0_data.height
     pixel_data_len = int(len(gct0_data.texture_data))
+    if (pixel_data_len != expected_data_len):
+        print(f"Texture data length mismatch! Expected length: {expected_data_len}. Actual length: {pixel_data_len}.")
+        print(f"Skipping texture [TEX_NAME]")
+        return "ERROR_FLAG"
 
     row = 0
     for i in range(pixel_data_len):
@@ -179,7 +177,6 @@ def rgba32_texture(gct0_data):
                 blue.append(col_chan)
     
     head = 0
-
     for i in range(int(len(red))):  # all channels are the same length, so it doesn't matter which one is used here
         decompressed_data[head] = red[i]
         decompressed_data[head+1] = green[i]
@@ -251,10 +248,11 @@ def cmpr_texture_testing(gct0_data):
 def load_rgb5a3_texture(gct0_data):
     pixel_list = []
     texture_data = rgb5a3_texture(gct0_data)
+    if (texture_data == "ERROR_FLAG"):
+        return "ERROR_FLAG"
+
     for pix in texture_data:
         pixel_list.append(pix / 255)
-    
-    print(len(pixel_list))
 
     return pixel_list
 
@@ -262,6 +260,9 @@ def load_rgb5a3_texture(gct0_data):
 def load_rgba32_texture(gct0_data):
     pixel_list = []
     texture_data = rgba32_texture(gct0_data)
+    if (texture_data == "ERROR_FLAG"):
+        return "ERROR_FLAG"
+
     for pix in texture_data:
         pixel_list.append(pix / 255)
 
@@ -272,6 +273,9 @@ def load_rgba32_texture(gct0_data):
 def load_cmpr_texture(gct0_data):
     pixel_list = []
     texture_data = cmpr_texture_testing(gct0_data)
+    if (texture_data == "ERROR_FLAG"):
+        return "ERROR_FLAG"
+
     for pix in texture_data:
         pixel_list.append(pix / 255)
 
@@ -288,7 +292,6 @@ class GCTTextureHandler(Operator):
         for i, tex in enumerate(textures):
             new_btex = None
 
-            #if tex.name == "HT_TREEL":
             # Check if the texture data is embedded in the model file
             if "No File" not in str(tex.gct0_texture.texture_data):
                 # If it is embedded, create a new Blender texture using the data
@@ -379,6 +382,9 @@ class GCTTextureHandler(Operator):
                 print("Texture format not supported (yet)")
                 pass
 
+        if pixels == "ERROR_FLAG":
+            return None
+        
         try:
             #bimg.pixels = pixels
             bimg.pixels.foreach_set(pixels)
