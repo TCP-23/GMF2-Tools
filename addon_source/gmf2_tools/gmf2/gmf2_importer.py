@@ -5,8 +5,8 @@ from bpy.types import Operator
 
 from .gmf2 import Gmf2
 from .object_creator import GM2ObjectCreator
-from .gct0_handler import GCTTextureHandler
-from .processed_object_data import ModelObjInfo
+from .gct0.gct0_handler import GCTTextureHandler
+from ..processed_object_data import ModelObjInfo
 
 Vec3 = namedtuple("Vec3", "x y z")
 Gm2Idx = namedtuple("Gm2Idx", "i u v n")
@@ -81,6 +81,7 @@ class GM2ModelImporter(Operator):
                 GM2ModelImporter.model_game_id = Gmf2.GameName.nmh1
             case 'V03':
                 GM2ModelImporter.model_game_id = Gmf2.GameName.nmh2
+                print("Version 3 GMF2 models currently only have experimental support.")
         
         print(GM2ModelImporter.model_game_id)
 

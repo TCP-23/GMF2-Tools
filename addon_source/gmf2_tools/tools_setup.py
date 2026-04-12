@@ -6,10 +6,10 @@ from bpy_extras.io_utils import ExportHelper
 
 from bpy.props import BoolProperty, StringProperty, EnumProperty, FloatProperty
 
-from .gmf2_importer import GM2ModelImporter
-from .gmf2_exporter import GM2ModelExporter
-from .flcg_importer import GCLModelImporter
-from .gan2_importer import GA2AnimImporter
+from .gmf2.gmf2_importer import GM2ModelImporter
+from .gmf2.gmf2_exporter import GM2ModelExporter
+from .flcg.flcg_importer import GCLModelImporter
+from .gan2.gan2_importer import GA2AnimImporter
 
 
 class GMF2_Setup(Operator, ImportHelper):

@@ -8,7 +8,7 @@ from enum import Enum
 if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
-from .gct0 import Gct0
+from .gct0.gct0 import Gct0
 class Gmf2(KaitaiStruct):
 
     class GameName(Enum):

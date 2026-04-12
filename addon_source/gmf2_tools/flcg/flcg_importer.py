@@ -11,9 +11,11 @@ class GCLModelImporter(Operator, AddObjectHelper):
     bl_label = "Import FLCG Model"
 
     bmat_list = {}
+    bobj_list = {}
 
     def load_file_data(self, context, filepath):
         GCLModelImporter.bmat_list.clear()
+        GCLModelImporter.bobj_list.clear()
 
         gcl: Flcg = Flcg.from_file(filepath)
 

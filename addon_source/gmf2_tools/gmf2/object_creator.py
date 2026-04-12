@@ -10,7 +10,7 @@ import random
 
 from .gmf2 import Gmf2
 
-from .gct0_handler import GCTTextureHandler
+from .gct0.gct0_handler import GCTTextureHandler
 
 class GM2ObjectCreator(Operator, AddObjectHelper):
     """Creates object data from a GMF2 file"""

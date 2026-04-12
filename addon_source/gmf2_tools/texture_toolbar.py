@@ -1,7 +1,7 @@
 import bpy
 from bpy.types import Operator
-from .gct0 import Gct0
-from .gct0_handler import GCTTextureHandler
+from .gmf2.gct0.gct0 import Gct0
+from .gmf2.gct0.gct0_handler import GCTTextureHandler
 
 
 class ExternalTextureToolbar(bpy.types.Panel):

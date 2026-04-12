@@ -2,6 +2,7 @@ import bpy
 import struct
 import math
 from bpy.types import Operator
+
 from .gct0 import Gct0
 
 CMPR_BLOCK_SIZE = 8

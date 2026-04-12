@@ -3,7 +3,7 @@ import struct
 import bpy
 from bpy.types import Operator
 
-from .export_object import *
+from ..export_object import *
 
 
 class GM2ModelExporter(Operator):
