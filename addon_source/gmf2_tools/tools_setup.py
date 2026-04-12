@@ -8,6 +8,7 @@ from bpy.props import BoolProperty, StringProperty, EnumProperty, FloatProperty
 
 from .gmf2_importer import GM2ModelImporter
 from .gmf2_exporter import GM2ModelExporter
+from .flcg_importer import GCLModelImporter
 from .gan2_importer import GA2AnimImporter
 
 
@@ -110,6 +111,14 @@ class GMF2_EX_Setup(Operator, ExportHelper):
         default=False
     )
 
+    exp_scale: FloatProperty(
+        name="Model Export Scale",
+        description="",
+        min=0.1,
+        max=100,
+        default=10
+    )
+
     def start_plugin(self, context, filepath):
         GM2ModelExporter.write_gmf2(self, context, filepath)
 
@@ -124,6 +133,28 @@ class FLCG_Setup(Operator, ImportHelper):
     bl_label = "Import FLCG Model"
 
     filter_glob: StringProperty(default="*.gcl", options={'HIDDEN'})
+
+    imp_scale: FloatProperty(
+        name="Model Import Scale",
+        description="",
+        min=0.01,
+        max=10,
+        default=0.1
+    )
+
+    import_mats: BoolProperty(
+        name="Import Dummy Materials",
+        description="",
+        default=True
+    )
+
+    def start_plugin(self, context, filepath):
+        GCLModelImporter.load_file_data(self, context, filepath)
+
+    def execute(self, context):
+        self.start_plugin(context, self.filepath)
+
+        return {'FINISHED'}
 
 
 class GAN2_Setup(Operator, ImportHelper):

@@ -42,25 +42,13 @@ def rgb5a3_to_RGBA(colorData):
 def pixel_block_mapper(unmapped_data, img_width, img_height, block_width, block_height):
     mapped_data = []
 
+    # It is technically possible to have a block that isn't completely filled with pixels, but I haven't seen any textures actually do this so I won't bother to support it
     width_in_blocks = int(math.ceil(img_width / block_width))
-    width_remainder = img_width % block_width
-
     height_in_blocks = int(math.ceil(img_height / block_height))
-    height_remainder = img_height % block_height
 
     w_block_iterator = 1
     h_block_iterator = 1
     block_row_iterator = 1
-
-    # NONFUNCTIONAL FOR NOW
-    if width_in_blocks > 1:
-        block_loop_w = block_width
-    else:
-        block_loop_w = width_remainder
-    if height_in_blocks > 1:
-        block_loop_h = block_height
-    else:
-        block_loop_h = height_remainder
 
     pixel = 1
     for i in range(1, int((len(unmapped_data) / 4) + 1)):
@@ -86,7 +74,6 @@ def pixel_block_mapper(unmapped_data, img_width, img_height, block_width, block_
         else:
             pixel += 1
         
-    #return mapped_data
     return mirror_texture_y(mapped_data, img_width, img_height)
 
 

@@ -14,7 +14,7 @@ from .texture_toolbar import TextureCleanupOperator
 
 def menu_func_import(self, context):
     self.layout.operator(GMF2_Setup.bl_idname, text="Grasshopper Manufacture Model (.gm2)")
-    #self.layout.operator(FLCG_Setup.bl_idname, text="Grasshopper Manufacture Collision Model (.gcl)")
+    self.layout.operator(FLCG_Setup.bl_idname, text="Grasshopper Manufacture Collision Model (.gcl)")
     self.layout.operator(GAN2_Setup.bl_idname, text="Grasshopper Manufacture Animation (.ga2)")
 
 
