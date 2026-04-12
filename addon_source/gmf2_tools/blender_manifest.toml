@@ -15,5 +15,5 @@ license = [
 ]
 
 wheels = [
-	"./wheels/kaitaistruct-0.10-py2.py3-none-any.whl",
+	"./wheels/kaitaistruct-0.11-py2.py3-none-any.whl",
 ]

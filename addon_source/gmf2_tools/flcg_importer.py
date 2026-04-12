@@ -42,3 +42,4 @@ class GCLModelImporter(Operator, AddObjectHelper):
 
             position = tuple((o_info.origin.x * self.imp_scale, o_info.origin.y * self.imp_scale, o_info.origin.z * self.imp_scale))
             new_obj.location = position
+        
