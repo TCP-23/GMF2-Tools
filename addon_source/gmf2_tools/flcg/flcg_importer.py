@@ -4,6 +4,8 @@ from bpy_extras import object_utils
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 from .flcg import Flcg
+from .collision_object_info import *
+
 
 class GCLModelImporter(Operator, AddObjectHelper):
     """Import mesh data from a FLCG file"""
@@ -17,12 +19,14 @@ class GCLModelImporter(Operator, AddObjectHelper):
         GCLModelImporter.bmat_list.clear()
         GCLModelImporter.bobj_list.clear()
 
-        gcl: Flcg = Flcg.from_file(filepath)
+        gcl = Flcg.from_file(filepath)
+
+        minfo_list = create_minfo_from_wobjects(gcl.objects)
 
         if self.import_mats:
             GCLModelImporter.import_dummy_materials(self, gcl.materials)
 
-        GCLModelImporter.import_objects(self, context, gcl.objects)
+        GCLModelImporter.import_objects(self, context, minfo_list)
 
     def import_dummy_materials(self, materials):
         for mat in materials:
@@ -37,11 +41,21 @@ class GCLModelImporter(Operator, AddObjectHelper):
 
         return bmat
     
-    def import_objects(self, context, objects):
-        for o_info in objects:
-            obj_mesh = bpy.data.meshes.new(o_info.name)
+    def import_objects(self, context, objects: list[CollisionModelObjectInfo]):
+        for minfo in objects:
+            obj_mesh = bpy.data.meshes.new(minfo.name)
             new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
 
-            position = tuple((o_info.origin.x * self.imp_scale, o_info.origin.y * self.imp_scale, o_info.origin.z * self.imp_scale))
+            position = tuple((minfo.data_object.origin.x * self.imp_scale, minfo.data_object.origin.y * self.imp_scale,
+                              minfo.data_object.origin.z * self.imp_scale))
             new_obj.location = position
+
+            if minfo.has_model_data:
+                pass
+            else:
+                pass
+
+            GCLModelImporter.bobj_list[minfo.data_object.offset] = new_obj
+            if minfo.is_child:
+                new_obj.parent = GCLModelImporter.bobj_list[minfo.parent.data_object.offset]
         
