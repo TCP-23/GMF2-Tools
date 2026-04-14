@@ -12,6 +12,9 @@ from .gmf2 import Gmf2
 
 from .gct0.gct0_handler import GCTTextureHandler
 
+SCALE_MULTIPLIER = 0.1
+
+
 class GM2ObjectCreator(Operator, AddObjectHelper):
     """Creates object data from a GMF2 file"""
     bl_idname = "gm2_importer.object_creation"
@@ -26,8 +29,8 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         new_obj = object_utils.object_data_add(context, obj_mesh, operator=None)
 
         # Scale the position by the import scale (default: 0.1)
-        position = tuple((m_info.data_obj.position.x * self.imp_scale, m_info.data_obj.position.y * self.imp_scale,
-                          m_info.data_obj.position.z * self.imp_scale))
+        position = tuple((m_info.data_obj.position.x * SCALE_MULTIPLIER * self.imp_scale, m_info.data_obj.position.y * SCALE_MULTIPLIER * self.imp_scale,
+                          m_info.data_obj.position.z * SCALE_MULTIPLIER * self.imp_scale))
         new_obj.location = position
 
         # i should rewrite this bit
@@ -87,17 +90,17 @@ class GM2ObjectCreator(Operator, AddObjectHelper):
         new_bone = new_arm.edit_bones.new(m_info.obj_name)
 
         new_bone.head = tuple((0, 0, 0))
-        new_bone.tail = tuple((0, 0, self.imp_scale / 4))
+        new_bone.tail = tuple((0, 0, self.imp_scale * SCALE_MULTIPLIER * 1.4))
 
         # Set the tail position of the bone (bones in GM2 models don't have head positions)
         if m_info.has_children and m_info.is_parent_of_bone:
-            new_bone.tail = tuple((m_info.first_child_obj.position.x * self.imp_scale,
-                                   m_info.first_child_obj.position.y * self.imp_scale,
-                                   m_info.first_child_obj.position.z * self.imp_scale))
+            new_bone.tail = tuple((m_info.first_child_obj.position.x * self.imp_scale * SCALE_MULTIPLIER,
+                                   m_info.first_child_obj.position.y * self.imp_scale * SCALE_MULTIPLIER,
+                                   m_info.first_child_obj.position.z * self.imp_scale * SCALE_MULTIPLIER))
         
         # Make sure the bone isn't below the minimum length
-        if new_bone.head == new_bone.tail or new_bone.length <= (self.imp_scale / 10):
-            new_bone.tail = tuple((0, 0, self.imp_scale / 4))
+        if new_bone.head == new_bone.tail or new_bone.length <= (self.imp_scale * SCALE_MULTIPLIER):
+            new_bone.tail = tuple((0, 0, self.imp_scale * SCALE_MULTIPLIER * 1.4))
         
         # Switch to object mode
         bpy.ops.object.mode_set(mode="OBJECT")

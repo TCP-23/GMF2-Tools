@@ -25,7 +25,7 @@ class GMF2_Setup(Operator, ImportHelper):
             ('DEF', "No override", "Allows the addon to determine the model's version."),
             ('V01', "Version 1 (BLOOD+)", "Currently unsupported"),
             ('V02', "Version 2 (NMH1)", ""),
-            ('V03', "Version 3 (NMH2)", ""),
+            ('V03', "Version 3 (NMH2)", "Experimental support"),
         ),
         default='DEF',
     )
@@ -55,10 +55,10 @@ class GMF2_Setup(Operator, ImportHelper):
 
     imp_scale: FloatProperty(
         name="Model Scale",
-        description="",
+        description="NOTE: 1 GM2 unit (1gu) = 10 Blender Units (10m).\nThe importer already takes care of this conversion by default,\nso you don't need to mess with this yourself\nunless you truly want to scale the model",
         min=0.01,
-        max=10,
-        default=0.1
+        max=100,
+        default=1
     )
 
     signed_normals: BoolProperty(
@@ -113,10 +113,10 @@ class GMF2_EX_Setup(Operator, ExportHelper):
 
     exp_scale: FloatProperty(
         name="Model Export Scale",
-        description="",
+        description="NOTE: 1 GM2 unit (1gu) = 10 Blender Units (10m).\nThe importer already takes care of this conversion by default,\nso you don't need to mess with this yourself\nunless you truly want to scale the model",
         min=0.1,
         max=100,
-        default=10
+        default=1
     )
 
     def start_plugin(self, context, filepath):
@@ -134,12 +134,23 @@ class FLCG_Setup(Operator, ImportHelper):
 
     filter_glob: StringProperty(default="*.gcl", options={'HIDDEN'})
 
+    up_axis: EnumProperty(
+        name="Up Axis",
+        description="The up axis of the model you are trying to import. \nMess with this if your model imports in the wrong orientation.\n",
+        items=(
+            ('OPT_A', "X", ""),
+            ('OPT_B', "Y", ""),
+            ('OPT_C', "Z", ""),
+        ),
+        default='OPT_B'
+    )
+
     imp_scale: FloatProperty(
         name="Model Import Scale",
-        description="",
+        description="NOTE: 1 GCL unit (1gu) = 10 Blender Units (10m).\nThe importer already takes care of this conversion by default,\nso you don't need to mess with this yourself\nunless you truly want to scale the model",
         min=0.01,
-        max=10,
-        default=0.1
+        max=100,
+        default=1
     )
 
     import_mats: BoolProperty(
@@ -147,6 +158,23 @@ class FLCG_Setup(Operator, ImportHelper):
         description="",
         default=True
     )
+
+    generate_mat_colors: BoolProperty(
+        name="Generate Material Colors",
+        description="Set the color of the imported dummy materials according to their index",
+        default=True
+    )
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.prop(self, "up_axis")
+        layout.prop(self, "imp_scale")
+
+        layout.prop(self, "import_mats")
+        if self.import_mats:
+            box = layout.box()
+            box.prop(self, "generate_mat_colors")
 
     def start_plugin(self, context, filepath):
         GCLModelImporter.load_file_data(self, context, filepath)

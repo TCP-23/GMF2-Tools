@@ -8,6 +8,8 @@ from .object_creator import GM2ObjectCreator
 from .gct0.gct0_handler import GCTTextureHandler
 from ..processed_object_data import ModelObjInfo
 
+SCALE_MULTIPLIER = 0.1
+
 Vec3 = namedtuple("Vec3", "x y z")
 Gm2Idx = namedtuple("Gm2Idx", "i u v n")
 
@@ -153,15 +155,15 @@ class GM2ModelImporter(Operator):
         for v in v_buf:
             if GM2ModelImporter.model_game_id == Gmf2.GameName.nmh1:
                 try:
-                    vertPos = Vec3((v.x / pow(2, m_info.data_obj.v_divisor)) * self.imp_scale,
-                                   (v.y / pow(2, m_info.data_obj.v_divisor)) * self.imp_scale,
-                                   (v.z / pow(2, m_info.data_obj.v_divisor)) * self.imp_scale)
+                    vertPos = Vec3((v.x / pow(2, m_info.data_obj.v_divisor)) * SCALE_MULTIPLIER * self.imp_scale,
+                                   (v.y / pow(2, m_info.data_obj.v_divisor)) * SCALE_MULTIPLIER * self.imp_scale,
+                                   (v.z / pow(2, m_info.data_obj.v_divisor)) * SCALE_MULTIPLIER * self.imp_scale)
                 except OverflowError:
                     vertPos = Vec3(0.1, 0.1, 0.1)
                     print(len(v_buf))
                     return []
             elif GM2ModelImporter.model_game_id == Gmf2.GameName.nmh2:
-                vertPos = Vec3(v.x * self.imp_scale, v.y * self.imp_scale, v.z * self.imp_scale)
+                vertPos = Vec3(v.x * SCALE_MULTIPLIER * self.imp_scale, v.y * SCALE_MULTIPLIER * self.imp_scale, v.z * SCALE_MULTIPLIER * self.imp_scale)
             elif GM2ModelImporter.model_game_id == Gmf2.GameName.blood:
                 return []
             else:  # If the game ID isn't recognized, return empty
@@ -356,7 +358,8 @@ class GM2ModelImporter(Operator):
             # Apply the display model to the bones
             for bone in pose_bones:
                 bone.custom_shape = bone_model
-                bone.custom_shape_scale_xyz = tuple((self.imp_scale / 20, self.imp_scale / 20, self.imp_scale / 20))
+                bone.custom_shape_scale_xyz = tuple(((self.imp_scale * SCALE_MULTIPLIER) / 10, (self.imp_scale * SCALE_MULTIPLIER) / 10,
+                                                     (self.imp_scale * SCALE_MULTIPLIER) / 10))
                 bone.use_custom_shape_bone_size = False
             
             # Switch to object mode
@@ -392,7 +395,5 @@ class GM2ModelImporter(Operator):
             for junk_obj in GM2ModelImporter.junk_objs:
                 GM2ModelImporter.junk_objs[junk_obj].data.user_clear()
                 bpy.data.objects[GM2ModelImporter.junk_objs[junk_obj].name].select_set(True)
-
             GM2ModelImporter.junk_objs.clear()
-
             bpy.ops.object.delete(use_global=False, confirm=False)
