@@ -11,6 +11,23 @@ from .gmf2.gmf2_exporter import GM2ModelExporter
 from .flcg.flcg_importer import GCLModelImporter
 from .gan2.gan2_importer import GA2AnimImporter
 
+from .gmf2.blood.blood_gmf2_importer import BloodGMF2ModelImporter
+
+
+class Blood_GMF2_Setup(Operator, ImportHelper):
+    bl_idname = "blood_importer.setup"
+    bl_label = "Import Blood GMF2 model"
+
+    filter_glob: StringProperty(default="*.gm2", options={'HIDDEN'})
+
+    def start_plugin(self, context, filepath):
+        return BloodGMF2ModelImporter.import_gm2(self, context, filepath)
+
+    def execute(self, context):
+        result = self.start_plugin(context, self.filepath)
+
+        return result
+
 
 class GMF2_Setup(Operator, ImportHelper):
     bl_idname = "gm2_importer.setup"

@@ -84,8 +84,6 @@ class GM2ModelImporter(Operator):
             case 'V03':
                 GM2ModelImporter.model_game_id = Gmf2.GameName.nmh2
                 print("Version 3 GMF2 models currently only have experimental support.")
-        
-        print(GM2ModelImporter.model_game_id)
 
         # Get a list of all the objects in the file
         unsorted_objects = {}
