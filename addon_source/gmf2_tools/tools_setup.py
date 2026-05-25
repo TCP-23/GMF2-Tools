@@ -12,6 +12,7 @@ from .flcg.flcg_importer import GCLModelImporter
 from .gan2.gan2_importer import GA2AnimImporter
 
 from .gmf2.blood.blood_gmf2_importer import BloodGMF2ModelImporter
+from .gmf2.blood.blood_gmf2_importer_r2 import GMF2BModelImporter
 
 
 class Blood_GMF2_Setup(Operator, ImportHelper):
@@ -22,6 +23,63 @@ class Blood_GMF2_Setup(Operator, ImportHelper):
 
     def start_plugin(self, context, filepath):
         return BloodGMF2ModelImporter.import_gm2(self, context, filepath)
+
+    def execute(self, context):
+        result = self.start_plugin(context, self.filepath)
+
+        return result
+    
+
+class GMF2B_Setup(Operator, ImportHelper):
+    bl_idname = "gmf2b_importer.setup"
+    bl_label = "Import GMF2B model"
+
+    filter_glob: StringProperty(default="*.gm2", options={'HIDDEN'})
+
+    up_axis: EnumProperty(
+        name="Up Axis",
+        description="The up axis of the model you are trying to import. \nMess with this if your model imports in the wrong orientation.\n",
+        items=(
+            ('OPT_A', "X", ""),
+            ('OPT_B', "Y", ""),
+            ('OPT_C', "Z", ""),
+        ),
+        default='OPT_B'
+    )
+
+    imp_scale: FloatProperty(
+        name="Model Import Scale",
+        description="NOTE: 1 GCL unit (1gu) = 10 Blender Units (10m).\nThe importer already takes care of this conversion by default,\nso you don't need to mess with this yourself\nunless you truly want to scale the model",
+        min=0.01,
+        max=100,
+        default=1
+    )
+
+    import_mats: BoolProperty(
+        name="Import Materials",
+        description="",
+        default=True
+    )
+
+    generate_mat_colors: BoolProperty(
+        name="Generate Material Colors",
+        description="Set the color of the imported dummy materials according to their index",
+        default=True
+    )
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.prop(self, "up_axis")
+        layout.prop(self, "imp_scale")
+
+        layout.prop(self, "import_mats")
+        if self.import_mats:
+            box = layout.box()
+            box.prop(self, "generate_mat_colors")
+
+    def start_plugin(self, context, filepath):
+        return GMF2BModelImporter.load_file_data(self, context, filepath)
 
     def execute(self, context):
         result = self.start_plugin(context, self.filepath)

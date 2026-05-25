@@ -7,6 +7,7 @@ from .tools_setup import GMF2_EX_Setup
 from .tools_setup import FLCG_Setup
 from .tools_setup import GAN2_Setup
 from .tools_setup import Blood_GMF2_Setup
+from .tools_setup import GMF2B_Setup
 from .tools_setup import AddonWikiPanel
 from .texture_toolbar import ExternalTextureToolbar
 from .texture_toolbar import TextureReplacementOperator
@@ -15,7 +16,8 @@ from .texture_toolbar import TextureCleanupOperator
 
 def menu_func_import(self, context):
     self.layout.operator(GMF2_Setup.bl_idname, text="Grasshopper Manufacture Model (.gm2)")
-    self.layout.operator(Blood_GMF2_Setup.bl_idname, text="BLOOD+ Model (.gm2)")
+    self.layout.operator(Blood_GMF2_Setup.bl_idname, text="(OLD) BLOOD+ Model (.gm2)")
+    self.layout.operator(GMF2B_Setup.bl_idname, text="BLOOD+ Model (.gm2)")
     self.layout.operator(FLCG_Setup.bl_idname, text="Grasshopper Manufacture Collision Model (.gcl)")
     self.layout.operator(GAN2_Setup.bl_idname, text="Grasshopper Manufacture Animation (.ga2)")
 
@@ -31,6 +33,7 @@ def register():
     bpy.utils.register_class(FLCG_Setup)
     bpy.utils.register_class(GAN2_Setup)
     bpy.utils.register_class(Blood_GMF2_Setup)
+    bpy.utils.register_class(GMF2B_Setup)
     bpy.utils.register_class(AddonWikiPanel)
     bpy.utils.register_class(ExternalTextureToolbar)
     bpy.utils.register_class(TextureReplacementOperator)
@@ -46,6 +49,7 @@ def unregister():
     bpy.utils.unregister_class(FLCG_Setup)
     bpy.utils.unregister_class(GAN2_Setup)
     bpy.utils.unregister_class(Blood_GMF2_Setup)
+    bpy.utils.unregister_class(GMF2B_Setup)
     bpy.utils.unregister_class(AddonWikiPanel)
     bpy.utils.unregister_class(ExternalTextureToolbar)
     bpy.utils.unregister_class(TextureReplacementOperator)

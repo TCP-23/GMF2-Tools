@@ -51,6 +51,7 @@ def find_tme_blocks(data):
 
 def decode_tme_to_material(data, offset, mat_idx):
     csm_flags = data[offset + 0x0A]
+    print(csm_flags)
     img_width = struct.unpack_from('<I', data, offset + 0x40)[0]
     img_height = struct.unpack_from('<I', data, offset + 0x44)[0]
 
