@@ -4,7 +4,7 @@
 import kaitaistruct
 from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 
-from .blood_tex import BloodTex
+from .tme import Tme
 
 
 if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 11):
@@ -35,8 +35,8 @@ class Gmf2b(KaitaiStruct):
         self.num_materials = self._io.read_u2le()
         self.off_objects = self._io.read_u4le()
         self.off_textures = self._io.read_u4le()
-        if not  ((self.off_textures == 112) or (self.off_textures == 128)) :
-            raise kaitaistruct.ValidationNotAnyOfError(self.off_textures, self._io, u"/seq/8")
+        if not self.off_textures == 112:
+            raise kaitaistruct.ValidationNotEqualError(112, self.off_textures, self._io, u"/seq/8")
         self.unused_0x28 = self._io.read_u4le()
         if not self.unused_0x28 == 0:
             raise kaitaistruct.ValidationNotEqualError(0, self.unused_0x28, self._io, u"/seq/9")
@@ -171,7 +171,7 @@ class Gmf2b(KaitaiStruct):
                 self.shaderparams_main_a = Gmf2b.FlVector4Le(self._io, self, self._root)
                 self.shaderparams_main_tint = Gmf2b.FlVector4Le(self._io, self, self._root)
                 self.off_main_data = self._io.read_u4le()
-                self._unnamed7 = self._io.read_bytes(4)
+                self.unk_0x34 = self._io.read_u4le()
                 self.off_ramp_tex = self._io.read_u4le()
                 self.unk_0x3c = self._io.read_u4le()
                 self.shaderparams_ramp_a = Gmf2b.FlVector4Le(self._io, self, self._root)
@@ -245,14 +245,14 @@ class Gmf2b(KaitaiStruct):
 
 
         @property
-        def texture_data(self) -> BloodTex:
+        def texture_data(self) -> Tme:
             if hasattr(self, '_m_texture_data'):
                 return self._m_texture_data
 
             io = self._root._io
             _pos = io.pos()
             io.seek(self.off_data)
-            self._m_texture_data = BloodTex(io)
+            self._m_texture_data = Tme(io)
             io.seek(_pos)
             return getattr(self, '_m_texture_data', None)
 

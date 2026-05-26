@@ -1,6 +1,6 @@
 meta:
-  id: blood_tex
-  file-extension: blood_tex
+  id: tme
+  file-extension: TME, tme
   encoding: SHIFT_JIS
   endian: le
 

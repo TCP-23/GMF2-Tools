@@ -1,3 +1,5 @@
+import math
+
 import bpy
 import bmesh
 from bpy.types import Operator
@@ -5,11 +7,12 @@ from bpy_extras import object_utils
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 from .gmf2b import Gmf2b
-from .blood_tex import BloodTex
+from .tme import Tme
 from .blood_object_info import *
 from ..gct0.gct0_handler import GCTTextureHandler
 
 SCALE_MULTIPLIER = 0.1
+PI_OVER_TWO = math.pi / 2
 
 
 class GMF2BModelImporter(Operator):
@@ -95,6 +98,44 @@ class GMF2BModelImporter(Operator):
         return bmat
 
     def import_objects(self, context, objects: list[BloodModelObjectInfo]):
+        empties: list[BloodModelObjectInfo] = []
+        bones: list[BloodModelObjectInfo] = []
+        meshes: list[BloodModelObjectInfo] = []
+
+        for obj in objects:
+            if obj.has_model_data:
+                meshes.append(obj)
+            elif obj.is_bone:
+                bones.append(obj)
+            else:
+                empties.append(obj)
+        
+        if len(bones) > 0:
+            GMF2BModelImporter.create_armature(self, context, bones)
+
+    def create_object(self, obj_info: BloodModelObjectInfo):
+        pass
+
+    def create_armature(self, context, bones: list[BloodModelObjectInfo]):
+        arm_data = bpy.data.armatures.new("Armature")
+        arm_obj = bpy.data.objects.new("Armature", arm_data)
+        context.collection.objects.link(arm_obj)
+        arm_obj.rotation_euler = (PI_OVER_TWO, 0, 0)
+        context.view_layer.objects.active = arm_obj
+
+        bpy.ops.object.mode_set(mode="EDIT")
+        edit_bones = {}
+        for b in bones:
+            eb = arm_data.edit_bones.new(b.unique_name_string)
+            pos = b.global_matrix.translation
+            eb.head, eb.tail = pos, pos + mathutils.Vector((0, 0.1, 0))
+            edit_bones[b.data_object.offset] = eb
+        for b in bones:
+            if b.is_child:
+                edit_bones[b.data_object.offset].parent = edit_bones[b.parent.data_object.offset]
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+    def create_mesh(self, mesh_info):
         pass
 
     def cleanup(self, context):

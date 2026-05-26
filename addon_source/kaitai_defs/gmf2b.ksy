@@ -4,7 +4,7 @@ meta:
   encoding: SHIFT-JIS
   endian: be
   imports:
-    - blood_tex
+    - tme
 
 doc: |
   Planned to be merged into the main gmf2.ksy file soon.
@@ -35,8 +35,7 @@ seq:
     type: u4le
   - id: off_textures
     type: u4le
-    valid:
-      any-of: [0x70, 0x80]
+    valid: 0x70
   - id: unused_0x28
     type: u4le
     valid: 0
@@ -152,7 +151,7 @@ types:
       texture_data:
         io: _root._io
         pos: off_data
-        type: blood_tex
+        type: tme
   
   # --- Materials
   
@@ -208,7 +207,8 @@ types:
           
           - id: off_main_data
             type: u4le
-          - contents: [0, 0, 0, 0]
+          - id: unk_0x34
+            type: u4le
           - id: off_ramp_tex
             type: u4le
           - id: unk_0x3c
