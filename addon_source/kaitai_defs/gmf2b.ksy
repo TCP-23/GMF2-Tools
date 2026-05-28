@@ -227,6 +227,9 @@ types:
   
   world_object:
     doc: |
+      Please remember to figure out how to actually grab the proper strips.
+      Please.
+      
       Most of the bone/skin weighting data is incorrect.
       Update soon.
   
@@ -239,8 +242,11 @@ types:
         size: 8
       - id: flags
         type: u4le
-      - id: off_v_buf
+        doc: |
+          0x11 = bone
+      - id: unused_0x0c
         type: u4le
+        valid: 0
         
       - id: off_parent
         type: u4le
@@ -259,8 +265,9 @@ types:
       
       - id: off_first_bone
         type: u4le
-      - id: v_divisor
+      - id: unused_0x2c
         type: u4le
+        valid: 0
       
       - id: position
         type: fl_vector4_le
@@ -273,4 +280,195 @@ types:
         type: fl_vector4_le
       - id: cullbox_size
         type: fl_vector4_le
-  
+    instances:
+      surfaces:
+        io: _root._io
+        pos: off_surfaces
+        type: surface(_io.pos, _index)
+        repeat: until
+        repeat-until: _.off_next == 0
+        if: off_surfaces != 0
+    types:
+      surface:
+        params:
+          - id: offset
+            type: u4
+          - id: surf_idx
+            type: u4
+        seq:
+          - id: off_prev
+            type: u4le
+          - id: off_next
+            type: u4le
+          - id: off_data
+            type: u4le
+          - id: off_material
+            type: u4le
+            
+          - id: unk_0x10
+            type: u4le
+          - id: off_skin_data
+            type: u4le
+          
+          - id: unused_0x1c
+            size: 8
+        instances:
+          skin_data:
+            io: _root._io
+            pos: off_skin_data
+            type: skinning_data
+            if: off_skin_data != 0
+          data_strips:
+            io: _root._io
+            pos: off_data
+            type: surface_data(_io.pos)
+            repeat: until
+            repeat-until: _.is_final_strip.is_final == true
+        types:
+          surface_data:
+            params:
+              - id: offset
+                type: u4
+            seq:
+              - size: 8
+              
+              - id: off_prevstrip
+                type: u4le
+              
+              - id: unk_0x0c
+                type: u2le
+                valid: 0x8000
+              - id: unk_0x0e
+                type: u2le
+              
+              - id: count
+                type: u4le
+              - id: dir_val
+                type: u4le
+              - id: unused_0x18
+                type: u8
+                valid: 0
+            
+              - id: vertices
+                type: vertex
+                repeat: expr
+                repeat-expr: count
+              
+              - id: unk_1
+                type: u4be
+                valid: 17
+              - id: unk_2
+                type: u4be
+                valid: 23
+              
+              - size: 8
+            instances:
+              is_final_strip:
+                type: data_end_calc
+            types:
+              data_end_calc:
+                instances:
+                  sentinel_check:
+                    io: _root._io
+                    pos: ending_pos + 8
+                    type: u4le
+                    if: ending_pos != _io.size
+                  is_final_surf_of_obj:
+                    value: >-
+                      _parent._parent._parent.surfaces.size ==
+                      _parent._parent.surf_idx + 1
+                  ending_pos:
+                    value: >-
+                      _parent.offset + 48 + (64 * _parent.count)
+                  is_final:
+                    value: >-
+                      is_final_surf_of_obj == false
+                      ? _parent._parent._parent.surfaces[_parent._parent.surf_idx + 1].off_data == ending_pos
+                      : ending_pos == _io.size
+                      ? true
+                      : sentinel_check != 0x0
+              vertex:
+                seq:
+                  - id: position
+                    type: fl_vector_le
+          
+                  - id: unk_0x0c
+                    type: f4le
+          
+                  - id: unk_0x10
+                    type: fl_vector_le
+                  - id: unused_0x1c
+                    type: u4
+                    valid: 0
+          
+                  - id: unk_0x20
+                    type: f4le
+                  - id: unk_0x24
+                    type: f4le
+                  - id: unk_0x28
+                    type: f4le
+                  - id: unk_0x2c
+                    type: f4le
+          
+                  - id: u
+                    type: f4le
+                  - id: v_tex
+                    type: f4le
+          
+                  - id: unk_0x38
+                    type: f4le
+                    valid: 1
+                  - id: unused_0x3c
+                    type: u4
+                    valid: 0
+                instances:
+                  v:
+                    value: 1 - v_tex
+          skinning_data:
+            seq:
+              - id: off_prev
+                type: u4le
+              - id: off_next
+                type: u4le
+              - id: off_data
+                type: u4le
+              - id: unused_0x0c
+                type: u4
+                valid: 0
+            instances:
+              ub:
+                io: _root._io
+                pos: off_data
+                type: unk_binding_02
+                repeat: until
+                repeat-until: _.off_next == 0
+            types:
+              unk_binding_02:
+                seq:
+                  - id: off_prev
+                    type: u4le
+                  - id: off_next
+                    type: u4le
+                  - id: off_data
+                    type: u4le
+                  - id: unused_0x0c
+                    type: u4
+                    valid: 0
+                instances:
+                  weight_binds:
+                    io: _root._io
+                    pos: off_data
+                    type: bone_weight_binding
+                    repeat: until
+                    repeat-until: _.off_next == 0
+                types:
+                  bone_weight_binding:
+                    seq:
+                      - id: off_prev
+                        type: u4le
+                      - id: off_next
+                        type: u4le
+                      - id: off_bone
+                        type: u4le
+                      - id: weight_strength
+                        type: f4le

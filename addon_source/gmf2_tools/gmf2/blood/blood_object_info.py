@@ -39,19 +39,20 @@ class BloodModelObjectInfo:
     @property
     def has_model_data(self) -> bool:
         """Does the object have any mesh data?"""
-        return False
+        return self.data_object.off_surfaces is not 0
     
     @property
     def is_bone(self) -> bool:
         """Is the object an armature bone?"""
-        if self.has_model_data:
-            return False
+        # if self.has_model_data:
+        #     return False
         
-        if self.name is not "ROOT":
-            if self.root is not self and not self.root.is_bone:
-                return False
+        # if self.name is not "ROOT":
+        #     if self.root is not self and not self.root.is_bone:
+        #         return False
         
-        return True
+        # return True
+        return self.data_object.flags == 0x11
     
 
 def create_minfo_from_wobjects(wobjs: list[Gmf2b.WorldObject]):

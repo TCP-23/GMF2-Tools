@@ -61,22 +61,11 @@ class GMF2B_Setup(Operator, ImportHelper):
         default=True
     )
 
-    generate_mat_colors: BoolProperty(
-        name="Generate Material Colors",
-        description="Set the color of the imported dummy materials according to their index",
+    assume_surf_data: BoolProperty(
+        name="Assume Surface Data",
+        description="",
         default=True
     )
-
-    def draw(self, context):
-        layout = self.layout
-
-        layout.prop(self, "up_axis")
-        layout.prop(self, "imp_scale")
-
-        layout.prop(self, "import_mats")
-        if self.import_mats:
-            box = layout.box()
-            box.prop(self, "generate_mat_colors")
 
     def start_plugin(self, context, filepath):
         return GMF2BModelImporter.load_file_data(self, context, filepath)

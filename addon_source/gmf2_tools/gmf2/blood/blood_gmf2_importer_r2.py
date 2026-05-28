@@ -102,19 +102,54 @@ class GMF2BModelImporter(Operator):
         bones: list[BloodModelObjectInfo] = []
         meshes: list[BloodModelObjectInfo] = []
 
+        non_bones: list[BloodModelObjectInfo] = []
+
         for obj in objects:
             if obj.has_model_data:
                 meshes.append(obj)
+                non_bones.append(obj)
             elif obj.is_bone:
                 bones.append(obj)
             else:
                 empties.append(obj)
+                non_bones.append(obj)
         
+        arm_obj = None
         if len(bones) > 0:
-            GMF2BModelImporter.create_armature(self, context, bones)
+            arm_obj = GMF2BModelImporter.create_armature(self, context, bones)
 
-    def create_object(self, obj_info: BloodModelObjectInfo):
-        pass
+        for obj in non_bones:
+            new_bobj = GMF2BModelImporter.create_object(self, context, obj)
+            GMF2BModelImporter.bobj_list[obj.data_object.offset] = new_bobj
+
+            if obj.is_child:
+                if obj.parent.is_bone:
+                    context.view_layer.objects.active = arm_obj
+                    new_bobj.parent = arm_obj
+                    new_bobj.parent_type = "BONE"
+                    new_bobj.parent_bone = obj.parent.unique_name_string
+                    new_bobj.matrix_parent_inverse = arm_obj.pose.bones[obj.parent.unique_name_string].matrix.inverted()
+                    
+                    if obj.has_model_data:
+                        new_bobj.modifiers.new(type="ARMATURE", name="Armature").object = arm_obj
+
+    def create_object(self, context, obj_info: BloodModelObjectInfo):
+        if obj_info.has_model_data:
+            new_bobj = GMF2BModelImporter.create_mesh(self, context, obj_info)
+        else:
+            new_bobj = bpy.data.objects.new(obj_info.unique_name_string, bpy.data.meshes.new(obj_info.unique_name_string))
+            context.collection.objects.link(new_bobj)
+
+            # Handle position later
+        
+        # Handle objects that are children of bones elsewhere
+        if obj_info.is_child:
+            if not obj_info.parent.is_bone:
+                new_bobj.parent = GMF2BModelImporter.bobj_list[obj_info.parent.data_object.offset]
+        else:
+            new_bobj.rotation_euler = (PI_OVER_TWO, 0, 0)
+
+        return new_bobj
 
     def create_armature(self, context, bones: list[BloodModelObjectInfo]):
         arm_data = bpy.data.armatures.new("Armature")
@@ -135,8 +170,70 @@ class GMF2BModelImporter(Operator):
                 edit_bones[b.data_object.offset].parent = edit_bones[b.parent.data_object.offset]
         bpy.ops.object.mode_set(mode="OBJECT")
 
-    def create_mesh(self, mesh_info):
-        pass
+        return arm_obj
+
+    def create_mesh(self, context, mesh_info: BloodModelObjectInfo):
+        vertices, uvs, faces, face_mats = [], [], [], []
+        v_off = 0
+        mat_counter = 0
+
+        mat_offset_to_idx = {}
+
+        for surf in mesh_info.data_object.surfaces:
+            for strip_data in surf.data_strips:
+                if self.import_mats:
+                    if not mat_offset_to_idx.keys().__contains__(surf.off_material):
+                        mat_offset_to_idx[surf.off_material] = mat_counter
+                        mat_counter += 1
+
+                for vdata in strip_data.vertices:
+                    global_vec = mesh_info.global_matrix @ mathutils.Vector((vdata.position.x, vdata.position.y, vdata.position.z))
+                    vertices.append((global_vec.x, global_vec.y, global_vec.z))
+
+                    uvs.append((vdata.u, vdata.v))
+
+                for s in range(strip_data.count - 2):
+                    idx = [v_off + s, v_off + s + 1, v_off + s + 2]
+                    if s % 2 == 1: idx[0], idx[1] = idx[1], idx[0]
+                    if len(set(idx)) == 3:
+                        faces.append(idx)
+                        face_mats.append(mat_offset_to_idx[surf.off_material])
+                
+                v_off += strip_data.count
+
+                if not self.assume_surf_data:
+                    break
+    
+        mesh_data = bpy.data.meshes.new(mesh_info.unique_name_string)
+        mesh_data.from_pydata(vertices, [], faces)
+
+        mat_idx_to_offset = {value: key for key, value in mat_offset_to_idx.items()}
+        for mat_idx in range(0, mat_counter):
+            mesh_data.materials.append(GMF2BModelImporter.bmat_list[mat_idx_to_offset[mat_idx]])
+        
+        for poly, m_idx in zip(mesh_data.polygons, face_mats):
+            poly.material_index = m_idx
+            poly.use_smooth = True
+        
+        uv_layer = mesh_data.uv_layers.new(name="UVMap")
+        for loop in mesh_data.loops:
+            uv_layer.data[loop.index].uv = uvs[loop.vertex_index]
+        
+        new_bobj = bpy.data.objects.new(mesh_info.unique_name_string, mesh_data)
+        context.collection.objects.link(new_bobj)
+
+        context.view_layer.objects.active = new_bobj
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.average_normals(average_type="FACE_AREA")
+        bpy.ops.object.mode_set(mode="OBJECT")
+        new_bobj.select_set(False)
+
+        if mesh_info.is_child:
+            if mesh_info.root.is_bone:
+                vg = new_bobj.vertex_groups.new(name=mesh_info.parent.unique_name_string)
+                vg.add(list(range(len(vertices))), 1.0, "REPLACE")
+
+        return new_bobj
 
     def cleanup(self, context):
         bpy.ops.object.mode_set(mode="OBJECT")
