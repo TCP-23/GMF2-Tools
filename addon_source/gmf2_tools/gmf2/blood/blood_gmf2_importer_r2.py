@@ -152,6 +152,9 @@ class GMF2BModelImporter(Operator):
         return new_bobj
 
     def create_armature(self, context, bones: list[BloodModelObjectInfo]):
+        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1)
+        bone_model = context.active_object
+
         arm_data = bpy.data.armatures.new("Armature")
         arm_obj = bpy.data.objects.new("Armature", arm_data)
         context.collection.objects.link(arm_obj)
@@ -163,12 +166,28 @@ class GMF2BModelImporter(Operator):
         for b in bones:
             eb = arm_data.edit_bones.new(b.unique_name_string)
             pos = b.global_matrix.translation
-            eb.head, eb.tail = pos, pos + mathutils.Vector((0, 0.1, 0))
+            #eb.head, eb.tail = pos, pos + mathutils.Vector((0, 0.1, 0))
+            eb.head = pos
+            eb.tail = pos
             edit_bones[b.data_object.offset] = eb
         for b in bones:
             if b.is_child:
                 edit_bones[b.data_object.offset].parent = edit_bones[b.parent.data_object.offset]
+
         bpy.ops.object.mode_set(mode="OBJECT")
+
+        pose_bones = context.object.pose.bones
+        pose_bone_scale = (self.imp_scale * SCALE_MULTIPLIER) / 5
+        for b in pose_bones:
+            b.custom_shape = bone_model
+            b.custom_shape_scale_xyz = tuple((pose_bone_scale, pose_bone_scale, pose_bone_scale))
+            b.use_custom_shape_bone_size = False
+        
+        bpy.ops.object.select_all(action="DESELECT")
+        bpy.data.objects[bone_model.name].select_set(True)
+        bpy.ops.object.delete(use_global=False, confirm=False)
+
+        context.view_layer.objects.active = arm_obj
 
         return arm_obj
 
