@@ -105,12 +105,17 @@ class GMF2BModelImporter(Operator):
         non_bones: list[BloodModelObjectInfo] = []
 
         for obj in objects:
+            is_empty = True
+
             if obj.has_model_data:
+                is_empty = False
                 meshes.append(obj)
                 non_bones.append(obj)
-            elif obj.is_bone:
+            if obj.is_bone:
+                is_empty = False
                 bones.append(obj)
-            else:
+            
+            if is_empty:
                 empties.append(obj)
                 non_bones.append(obj)
         
@@ -166,7 +171,6 @@ class GMF2BModelImporter(Operator):
         for b in bones:
             eb = arm_data.edit_bones.new(b.unique_name_string)
             pos = b.global_matrix.translation
-            #eb.head, eb.tail = pos, pos + mathutils.Vector((0, 0.1, 0))
             eb.head = pos
             eb.tail = pos
             edit_bones[b.data_object.offset] = eb
@@ -196,18 +200,22 @@ class GMF2BModelImporter(Operator):
         v_off = 0
         mat_counter = 0
 
+        vertex_groups: dict[int, list[int]] = {}
+
         mat_offset_to_idx = {}
 
-        for surf in mesh_info.data_object.surfaces:
+        for i, surf in enumerate(mesh_info.data_object.surfaces):
+            vertex_groups[i] = []
             for strip_data in surf.data_strips:
                 if self.import_mats:
                     if not mat_offset_to_idx.keys().__contains__(surf.off_material):
                         mat_offset_to_idx[surf.off_material] = mat_counter
                         mat_counter += 1
-
-                for vdata in strip_data.vertices:
+                
+                for j, vdata in enumerate(strip_data.vertices):
                     global_vec = mesh_info.global_matrix @ mathutils.Vector((vdata.position.x, vdata.position.y, vdata.position.z))
                     vertices.append((global_vec.x, global_vec.y, global_vec.z))
+                    vertex_groups[i].append(v_off + j)
 
                     uvs.append((vdata.u, vdata.v))
 
@@ -241,16 +249,20 @@ class GMF2BModelImporter(Operator):
         new_bobj = bpy.data.objects.new(mesh_info.unique_name_string, mesh_data)
         context.collection.objects.link(new_bobj)
 
+        for i in range(len(mesh_info.data_object.surfaces)):
+            vg = new_bobj.vertex_groups.new(name=f"surface_{i+1}")
+            vg.add(vertex_groups[i], 1.0, "REPLACE")
+
         context.view_layer.objects.active = new_bobj
         bpy.ops.object.mode_set(mode="EDIT")
         bpy.ops.mesh.average_normals(average_type="FACE_AREA")
         bpy.ops.object.mode_set(mode="OBJECT")
         new_bobj.select_set(False)
 
-        if mesh_info.is_child:
-            if mesh_info.root.is_bone:
-                vg = new_bobj.vertex_groups.new(name=mesh_info.parent.unique_name_string)
-                vg.add(list(range(len(vertices))), 1.0, "REPLACE")
+        # if mesh_info.is_child:
+        #     if mesh_info.root.is_bone:
+        #         vg = new_bobj.vertex_groups.new(name=mesh_info.parent.unique_name_string)
+        #         vg.add(list(range(len(vertices))), 1.0, "REPLACE")
 
         return new_bobj
 
