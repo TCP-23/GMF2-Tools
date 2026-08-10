@@ -181,7 +181,7 @@ class GMF2BModelImporter(Operator):
         bpy.ops.object.mode_set(mode="OBJECT")
 
         pose_bones = context.object.pose.bones
-        pose_bone_scale = (self.imp_scale * SCALE_MULTIPLIER) / 5
+        pose_bone_scale = (self.imp_scale * SCALE_MULTIPLIER) / 3
         for b in pose_bones:
             b.custom_shape = bone_model
             b.custom_shape_scale_xyz = tuple((pose_bone_scale, pose_bone_scale, pose_bone_scale))
