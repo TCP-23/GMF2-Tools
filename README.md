@@ -19,39 +19,23 @@ A [Blender](https://www.blender.org) extension that allows Blender to import GMF
 ## Supported Games
 Games that are currently supported by the extension are:
 - No More Heroes
+
+Games that are only supported experimentally are:
 - No More Heroes 2: Desperate Struggle
+- BLOOD+: One Night Kiss
 
 Other games that use the GMF2 model format might have support added in the future.
 
 ## Known Issues
 - Addon fails when attemping to import a model with an armature if another model with an armature was imported previously
-- ~~Addon crashes when importing textures without models~~ (fixed in upcoming release)
 - Vertex groups are very inaccurate
 - Models with a 0x96 code will not have any vertices (e.x NMH1 sunglasses)
-- Textures compressed using RGB5A3 or RGBA32 will never import
 - Models with extremely large positional values will fail to import
-- Certain models (usually stages/maps) appear with an invalid positional offset
-- Some models will fail to import due to the addon reading an incorrect number of tristrips
 - Normals are reversed in certain models (e.x. Parts of NMH1 Travis's hair)
 
 If you have noticed an error that is not on this list, please report it!
 
-## Feature Checklist
-- ~~Vertices~~
-- ~~Indices~~
-- ~~Object Hierarchy~~
-- ~~Object Origins~~
-- ~~Object Rotations~~
-- ~~UVs~~
-- ~~Normals~~
-- ~~Armature~~
-- ~~Materials~~
-- ~~Textures~~
-- Weight Data
-- Animations
-- Blood+ support
-
 ## Credits
 Thanks to [sevonj](https://github.com/sevonj) for the basis of the GMF2 parser
 
-Thanks to [nettleada](https://blenderartists.org/t/gouraud-vertex-n64-ps1-style-shading-via-geometry-nodes-am-i-doing-this-the-hard-way/1395039) for the Gouraud Blender shading implementation (Distrubuted under CC0)
+Thanks to TravisTchDown (fdgsz) for providing the basis of the BLOOD+ GMF2 parser

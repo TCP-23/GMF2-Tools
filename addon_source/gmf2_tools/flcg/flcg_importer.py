@@ -63,7 +63,7 @@ class GCLModelImporter(Operator, AddObjectHelper):
         bmat = bpy.data.materials.new(mat_info.name)
         bmat.use_nodes = True
         bmat.node_tree.nodes["Principled BSDF"].inputs['Roughness'].default_value = 1
-        if (self.generate_mat_colors):
+        if self.generate_mat_colors:
             mat_index_truncated = mat_index
             while mat_index_truncated >= len(MATERIAL_COLORS):
                 mat_index_truncated -= len(MATERIAL_COLORS)
